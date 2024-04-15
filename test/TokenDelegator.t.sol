@@ -1,106 +1,123 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {TokenDelegator} from "src/TokenDelgator.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
+import {TokenDelegator} from "src/TokenDelegator.sol";
 
-interface IMintableERC20 is IERC20 {
-    function mint(address to, uint256 amount) external returns (bool);
+// MockERC20 simulates a basic ERC20 token with minting and burning capabilities.
+contract MockERC20 is ERC20 {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+
+    // Allows the contract owner to mint tokens to a specified address.
+    function mint(address to, uint256 amount) public {
+        _mint(to, amount);
+    }
 }
 
+// TokenDelegatorTest is a set of unit tests for the TokenDelegator contract.
 contract TokenDelegatorTest is Test {
     TokenDelegator public tokenDelegator;
-    IMintableERC20 public token;
+    MockERC20 public token;
     address public user;
     address public from;
-    address public to; 
+    address public to;
 
+    // setUp initializes the test environment.
     function setUp() public {
-        user = address(0xd1405fE8FaEe965075a6F903d773194463da0CfB);
-        from = address(0x00000000219ab540356cBB839Cbe05303d7705Fa);
-        to = address(0xBE0eB53F46cd790Cd13851d5EFf43D12404d33E8);
-        token = IMintableERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-        tokenDelegator = new TokenDelegator();
+        user = vm.addr(1); // Simulated user address
+        from = vm.addr(2); // Simulated sender address
+        to = vm.addr(3);   // Simulated receiver address
+        token = new MockERC20("Test Token", "TTN"); // Create a new token instance
+        tokenDelegator = new TokenDelegator(); // Create a new TokenDelegator instance
+
+        token.mint(from, 1000); // Mint 1000 tokens to the 'from' address for testing
     }
 
+    // testApprove verifies that approvals can be correctly set and queried.
     function testApprove() public {
         vm.prank(from);
         tokenDelegator.approve(user);
-        assertEq(tokenDelegator.approvals(user, from), true);
+        assertEq(tokenDelegator.allowance(user, from), true, "User should be approved.");
     }
 
+    // testTransferToken checks the functionality of transferring tokens through the delegator.
     function testTransferToken() public {
         uint256 transferAmount = 66;
         uint256 initialBalance = token.balanceOf(to);
         vm.prank(from);
+        tokenDelegator.approve(user); // Approve the user to act on behalf of 'from'
+        vm.prank(from);
+        token.approve(address(tokenDelegator), transferAmount); // Approve token transfer
+        vm.prank(user);
+        tokenDelegator.transferToken(token, from, to, transferAmount); // Execute transfer
+        assertEq(token.balanceOf(to), initialBalance + transferAmount, "Tokens should be transferred.");
+    }
+
+    // testTransferWithoutApproval checks that a transfer fails if no approval is given.
+    function testTransferWithoutApproval() public {
+        uint256 transferAmount = 66;
+        vm.expectRevert("TokenDelegator: not approved");
+        tokenDelegator.transferToken(token, from, to, transferAmount);
+    }
+
+    // testInsufficientBalance checks that a transfer fails if the balance is too low.
+    function testInsufficientBalance() public {
+        vm.prank(from);
         tokenDelegator.approve(user);
+        uint256 transferAmount = token.balanceOf(from) + 1; // Request more tokens than available
         vm.prank(from);
         token.approve(address(tokenDelegator), transferAmount);
         vm.prank(user);
-        tokenDelegator.transferToken(token, from, to, transferAmount);
-        assertEq(token.balanceOf(to), initialBalance + transferAmount);
-    }
-
-    function testTransferWithoutApproval() public {
-        uint256 transferAmount = 66;
         vm.expectRevert();
         tokenDelegator.transferToken(token, from, to, transferAmount);
     }
 
-    function testInsufficientBalance() public {
-        uint256 transferAmount = token.balanceOf(from) + 1;
-        vm.expectRevert();
-        tokenDelegator.transferToken(token, from, to, transferAmount);
-    }
-
+    // testBatchTransfer tests the functionality of transferring multiple token batches.
     function testBatchTransfer() public {
         TokenDelegator.Transfer[] memory transfers = new TokenDelegator.Transfer[](2);
         transfers[0] = TokenDelegator.Transfer(token, from, to, 100);
         transfers[1] = TokenDelegator.Transfer(token, from, to, 200);
 
-        // Setup approvals and token allowances
         vm.prank(from);
-        tokenDelegator.approve(user); // from approves user to manage their tokens
+        tokenDelegator.approve(user); // Approve user
         vm.prank(from);
-        token.approve(address(tokenDelegator), 300); // from approves TokenDelegator to handle 300 tokens
+        token.approve(address(tokenDelegator), 300); // Approve token transfer
 
         uint256 initialBalanceTo = token.balanceOf(to);
         uint256 initialBalanceFrom = token.balanceOf(from);
 
-        // Execute batch transfer
         vm.prank(user);
-        tokenDelegator.transferBatch(transfers);
+        tokenDelegator.transferBatch(transfers); // Execute batch transfer
 
-        // Check balances after transfer
-        assertEq(token.balanceOf(to), initialBalanceTo + 300); // to should receive 300 tokens total
-        assertEq(token.balanceOf(from), initialBalanceFrom - 300); // from should have 300 less tokens
+        assertEq(token.balanceOf(to), initialBalanceTo + 300, "Total tokens should be transferred.");
+        assertEq(token.balanceOf(from), initialBalanceFrom - 300, "Total tokens should be deducted.");
     }
 
+    // testBatchTransferWithoutApproval checks that batch transfers fail without proper approvals.
     function testBatchTransferWithoutApproval() public {
         TokenDelegator.Transfer[] memory transfers = new TokenDelegator.Transfer[](2);
         transfers[0] = TokenDelegator.Transfer(token, from, to, 100);
         transfers[1] = TokenDelegator.Transfer(token, from, to, 200);
 
-        // Expecting a revert due to lack of approval
         vm.expectRevert("TokenDelegator: not approved for all tokens");
         vm.prank(user);
         tokenDelegator.transferBatch(transfers);
     }
 
+    // testBatchTransferInsufficientBalance tests batch transfers fail with insufficient balances.
     function testBatchTransferInsufficientBalance() public {
         TokenDelegator.Transfer[] memory transfers = new TokenDelegator.Transfer[](1);
-        transfers[0] = TokenDelegator.Transfer(token, from, to, 1100); // Amount greater than the balance
+        transfers[0] = TokenDelegator.Transfer(token, from, to, 1001); // Exceed available balance
 
-        // Setup approvals
         vm.prank(from);
         tokenDelegator.approve(user);
         vm.prank(from);
-        token.approve(address(tokenDelegator), 1100); // Attempt to approve more than the balance
+        token.approve(address(tokenDelegator), 1001);
 
-        // Expecting a revert due to insufficient balance
-        vm.expectRevert();
         vm.prank(user);
+        vm.expectRevert();
         tokenDelegator.transferBatch(transfers);
     }
 }
