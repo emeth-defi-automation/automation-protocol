@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol";
 import {TokenDelegator} from "src/TokenDelegator.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
 // MockERC20 simulates a basic ERC20 token with minting and burning capabilities.
 contract MockERC20 is ERC20 {
@@ -28,9 +29,9 @@ contract TokenDelegatorTest is Test {
     function setUp() public {
         user = vm.addr(1); // Simulated user address
         from = vm.addr(2); // Simulated sender address
-        to = vm.addr(3);   // Simulated receiver address
+        to = vm.addr(3); // Simulated receiver address
         token = new MockERC20("Test Token", "TTN"); // Create a new token instance
-        tokenDelegator = new TokenDelegator(); // Create a new TokenDelegator instance
+        tokenDelegator = new TokenDelegator(ISwapRouter(address(0))); // Create a new TokenDelegator instance
 
         token.mint(from, 1000); // Mint 1000 tokens to the 'from' address for testing
     }
