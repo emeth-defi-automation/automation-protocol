@@ -75,7 +75,7 @@ contract TokenDelegator {
             sqrtPriceLimitX96: 0 
         });
 
-    uint256 amountOut = swapRouter.exactInputSingle(params);
+    swapRouter.exactInputSingle(params);
 
 }
 }
