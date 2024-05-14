@@ -165,4 +165,28 @@ contract TokenDelegator {
                 deadline
             );
     }
+
+    function addAction(
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint amountIn,
+        uint amountOutMin,
+        address _from,
+        address to,
+        uint deadline,
+        uint _delayDays
+    ) public {
+        actions[nextAutomationActionId] = AutomationsAction({
+            delay: _delayDays * 1 days,
+            date: 0,
+            tokenIn: tokenIn,
+            tokenOut: tokenOut,
+            amountIn: amountIn,
+            amountOutMin: amountOutMin,
+            from: _from,
+            to: to,
+            deadline: deadline
+        });
+        nextAutomationActionId++;
+    }
 }
