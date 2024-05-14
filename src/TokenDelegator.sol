@@ -199,9 +199,7 @@ contract TokenDelegator {
             "It is too early to execute this action again."
         );
 
-        if (action.date == 0) {
-            action.date = block.timestamp; // Set the first execution date
-        }
+        action.date = block.timestamp;
 
         return
             swapTokensForTokens(
