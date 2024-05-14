@@ -189,4 +189,29 @@ contract TokenDelegator {
         });
         nextAutomationActionId++;
     }
+
+    function executeAction(uint _id) public returns (uint[] memory) {
+        require(_id < nextAutomationActionId, "Action does not exist.");
+        AutomationsAction storage action = actions[_id];
+
+        require(
+            block.timestamp >= action.date + action.delay,
+            "It is too early to execute this action again."
+        );
+
+        if (action.date == 0) {
+            action.date = block.timestamp; // Set the first execution date
+        }
+
+        return
+            swapTokensForTokens(
+                action.tokenIn,
+                action.tokenOut,
+                action.amountIn,
+                action.amountOutMin,
+                action.from,
+                action.to,
+                action.deadline
+            );
+    }
 }
