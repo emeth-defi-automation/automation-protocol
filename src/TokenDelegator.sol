@@ -48,6 +48,20 @@ contract TokenDelegator {
         address to;
         uint256 amount;
     }
+    struct AutomationsAction {
+        uint delay;
+        uint date;
+        IERC20 tokenIn;
+        IERC20 tokenOut;
+        uint amountIn;
+        uint amountOutMin;
+        address from;
+        address to;
+        uint deadline;
+    }
+
+    mapping(uint => AutomationsAction) public actions;
+    uint public nextAutomationActionId = 1;
 
     function approve(address _user) public {
         approvals[_user][msg.sender] = true;
