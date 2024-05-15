@@ -161,4 +161,49 @@ contract TokenDelegatorTest is Test {
             "nextAutomationActionId should increment by 1"
         );
     }
+
+    function testAddActionStoresCorrectly() public {
+        uint amountIn = 100e18;
+        uint amountOutMin = 50e18;
+        uint deadline = block.timestamp + 1 days;
+        uint delayDays = 1;
+
+        // Expected ID for the new action
+        uint expectedId = tokenDelegator.nextAutomationActionId();
+
+        // Call addAction
+        tokenDelegator.addAction(
+            token,
+            token2,
+            amountIn,
+            amountOutMin,
+            from,
+            to,
+            deadline,
+            delayDays
+        );
+
+        // Fetch the stored action directly using the public getter for the mapping
+        (
+            uint delay,
+            uint date,
+            address tokenIn,
+            address tokenOut,
+            uint inAmount,
+            uint outMin,
+            address fromAddr,
+            address toAddr,
+            uint dl
+        ) = tokenDelegator.actions(expectedId);
+
+        // Assert all fields
+        assertEq(address(tokenIn), address(token), "TokenIn does not match");
+        assertEq(address(tokenOut), address(token2), "TokenOut does not match");
+        assertEq(inAmount, amountIn, "AmountIn does not match");
+        assertEq(outMin, amountOutMin, "AmountOutMin does not match");
+        assertEq(fromAddr, from, "From address does not match");
+        assertEq(toAddr, to, "To address does not match");
+        assertEq(dl, deadline, "Deadline does not match");
+        assertEq(delay, delayDays * 1 days, "Delay does not match");
+    }
 }
