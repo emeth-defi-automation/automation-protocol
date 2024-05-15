@@ -132,7 +132,7 @@ contract TokenDelegator {
         address _from,
         address to,
         uint deadline
-    ) external returns (uint[] memory) {
+    ) public returns (uint[] memory) {
         tokenIn.transferFrom(_from, address(this), amountIn);
 
         tokenIn.approve(address(uniswapV2Router), amountIn);
@@ -155,7 +155,7 @@ contract TokenDelegator {
         uint amountOutMin,
         address to,
         uint deadline
-    ) external payable returns (uint[] memory) {
+    ) public payable returns (uint[] memory) {
         address[] memory path = new address[](2);
         path[0] = uniswapV2Router.WETH();
         path[1] = address(tokenOut);
