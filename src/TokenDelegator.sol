@@ -48,6 +48,8 @@ contract TokenDelegator {
         address to;
         uint256 amount;
     }
+
+    // Define AutomationAction struct, maybe should be changed to AutomationDCAAction
     struct AutomationsAction {
         uint delay;
         uint date;
@@ -105,7 +107,7 @@ contract TokenDelegator {
         address _from,
         address to,
         uint deadline
-    ) external returns (uint[] memory) {
+    ) public returns (uint[] memory) {
         tokenIn.transferFrom(_from, address(this), amountIn);
 
         tokenIn.approve(address(uniswapV2Router), amountIn);
@@ -175,7 +177,7 @@ contract TokenDelegator {
         address to,
         uint deadline,
         uint _delayDays
-    ) public {
+    ) public returns (uint) {
         actions[nextAutomationActionId] = AutomationsAction({
             delay: _delayDays * 1 days,
             date: 0,
@@ -188,6 +190,7 @@ contract TokenDelegator {
             deadline: deadline
         });
         nextAutomationActionId++;
+        return nextAutomationActionId;
     }
 
     function executeAction(uint _id) public returns (uint[] memory) {

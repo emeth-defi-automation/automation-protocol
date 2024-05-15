@@ -20,6 +20,7 @@ contract MockERC20 is ERC20 {
 contract TokenDelegatorTest is Test {
     TokenDelegator public tokenDelegator;
     MockERC20 public token;
+    MockERC20 public token2;
     address public user;
     address public from;
     address public to;
@@ -28,8 +29,9 @@ contract TokenDelegatorTest is Test {
     function setUp() public {
         user = vm.addr(1); // Simulated user address
         from = vm.addr(2); // Simulated sender address
-        to = vm.addr(3);   // Simulated receiver address
+        to = vm.addr(3); // Simulated receiver address
         token = new MockERC20("Test Token", "TTN"); // Create a new token instance
+        token2 = new MockERC20("Test Token2", "TTN"); // Create a second new token instance
         tokenDelegator = new TokenDelegator(); // Create a new TokenDelegator instance
 
         token.mint(from, 1000); // Mint 1000 tokens to the 'from' address for testing
@@ -39,7 +41,11 @@ contract TokenDelegatorTest is Test {
     function testApprove() public {
         vm.prank(from);
         tokenDelegator.approve(user);
-        assertEq(tokenDelegator.allowance(user, from), true, "User should be approved.");
+        assertEq(
+            tokenDelegator.allowance(user, from),
+            true,
+            "User should be approved."
+        );
     }
 
     // testTransferToken checks the functionality of transferring tokens through the delegator.
@@ -52,7 +58,11 @@ contract TokenDelegatorTest is Test {
         token.approve(address(tokenDelegator), transferAmount); // Approve token transfer
         vm.prank(user);
         tokenDelegator.transferToken(token, from, to, transferAmount); // Execute transfer
-        assertEq(token.balanceOf(to), initialBalance + transferAmount, "Tokens should be transferred.");
+        assertEq(
+            token.balanceOf(to),
+            initialBalance + transferAmount,
+            "Tokens should be transferred."
+        );
     }
 
     // testTransferWithoutApproval checks that a transfer fails if no approval is given.
@@ -76,7 +86,8 @@ contract TokenDelegatorTest is Test {
 
     // testBatchTransfer tests the functionality of transferring multiple token batches.
     function testBatchTransfer() public {
-        TokenDelegator.Transfer[] memory transfers = new TokenDelegator.Transfer[](2);
+        TokenDelegator.Transfer[]
+            memory transfers = new TokenDelegator.Transfer[](2);
         transfers[0] = TokenDelegator.Transfer(token, from, to, 100);
         transfers[1] = TokenDelegator.Transfer(token, from, to, 200);
 
@@ -91,13 +102,22 @@ contract TokenDelegatorTest is Test {
         vm.prank(user);
         tokenDelegator.transferBatch(transfers); // Execute batch transfer
 
-        assertEq(token.balanceOf(to), initialBalanceTo + 300, "Total tokens should be transferred.");
-        assertEq(token.balanceOf(from), initialBalanceFrom - 300, "Total tokens should be deducted.");
+        assertEq(
+            token.balanceOf(to),
+            initialBalanceTo + 300,
+            "Total tokens should be transferred."
+        );
+        assertEq(
+            token.balanceOf(from),
+            initialBalanceFrom - 300,
+            "Total tokens should be deducted."
+        );
     }
 
     // testBatchTransferWithoutApproval checks that batch transfers fail without proper approvals.
     function testBatchTransferWithoutApproval() public {
-        TokenDelegator.Transfer[] memory transfers = new TokenDelegator.Transfer[](2);
+        TokenDelegator.Transfer[]
+            memory transfers = new TokenDelegator.Transfer[](2);
         transfers[0] = TokenDelegator.Transfer(token, from, to, 100);
         transfers[1] = TokenDelegator.Transfer(token, from, to, 200);
 
@@ -108,7 +128,8 @@ contract TokenDelegatorTest is Test {
 
     // testBatchTransferInsufficientBalance tests batch transfers fail with insufficient balances.
     function testBatchTransferInsufficientBalance() public {
-        TokenDelegator.Transfer[] memory transfers = new TokenDelegator.Transfer[](1);
+        TokenDelegator.Transfer[]
+            memory transfers = new TokenDelegator.Transfer[](1);
         transfers[0] = TokenDelegator.Transfer(token, from, to, 1001); // Exceed available balance
 
         vm.prank(from);
@@ -119,5 +140,25 @@ contract TokenDelegatorTest is Test {
         vm.prank(user);
         vm.expectRevert();
         tokenDelegator.transferBatch(transfers);
+    }
+
+    function testAddActionIncrementsId() public {
+        uint initialId = tokenDelegator.nextAutomationActionId();
+        tokenDelegator.addAction(
+            token,
+            token2,
+            100e18,
+            50e18,
+            user,
+            user,
+            block.timestamp + 1 days,
+            1
+        );
+        uint newId = tokenDelegator.nextAutomationActionId();
+        assertEq(
+            newId,
+            initialId + 1,
+            "nextAutomationActionId should increment by 1"
+        );
     }
 }
