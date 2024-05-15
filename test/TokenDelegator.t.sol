@@ -187,8 +187,8 @@ contract TokenDelegatorTest is Test {
         (
             uint delay,
             uint date,
-            address tokenIn,
-            address tokenOut,
+            IERC20 tokenIn,
+            IERC20 tokenOut,
             uint inAmount,
             uint outMin,
             address fromAddr,
