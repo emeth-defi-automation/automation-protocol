@@ -206,4 +206,67 @@ contract TokenDelegatorTest is Test {
         assertEq(dl, deadline, "Deadline does not match");
         assertEq(delay, delayDays * 1 days, "Delay does not match");
     }
+    function testGetAutomationAction() public {
+        // Add an action to test retrieval
+        token.approve(address(tokenDelegator), 500 ether);
+        token2.approve(address(tokenDelegator), 500 ether);
+
+        uint id = tokenDelegator.addAction(
+            token,
+            token2,
+            500 ether,
+            250 ether,
+            address(this),
+            address(this),
+            block.timestamp + 1 days,
+            1
+        );
+
+        // Retrieve the action
+        TokenDelegator.AutomationsAction memory retrievedAction = tokenDelegator
+            .getAutomationAction(id);
+
+        // Assertions to verify that the retrieved action matches the added action
+        assertEq(
+            address(retrievedAction.tokenIn),
+            address(token),
+            "TokenIn does not match"
+        );
+        assertEq(
+            address(retrievedAction.tokenOut),
+            address(token2),
+            "TokenOut does not match"
+        );
+        assertEq(
+            retrievedAction.amountIn,
+            500 ether,
+            "AmountIn does not match"
+        );
+        assertEq(
+            retrievedAction.amountOutMin,
+            250 ether,
+            "AmountOutMin does not match"
+        );
+        assertEq(
+            retrievedAction.from,
+            address(this),
+            "From address does not match"
+        );
+        assertEq(
+            retrievedAction.to,
+            address(this),
+            "To address does not match"
+        );
+        assertEq(
+            retrievedAction.deadline,
+            block.timestamp + 1 days,
+            "Deadline does not match"
+        );
+        assertEq(retrievedAction.delay, 1 days, "Delay does not match");
+    }
+
+    // Add a test for invalid ID retrieval
+    function testFailGetAutomationActionInvalidId() public {
+        tokenDelegator.getAutomationAction(999); // This ID should not exist
+    }
 }
