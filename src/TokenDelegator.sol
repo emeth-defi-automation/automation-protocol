@@ -178,7 +178,8 @@ contract TokenDelegator {
         uint deadline,
         uint _delayDays
     ) public returns (uint) {
-        actions[nextAutomationActionId] = AutomationsAction({
+        uint currentId = nextAutomationActionId;
+        actions[currentId] = AutomationsAction({
             delay: _delayDays * 1 days,
             date: 0,
             tokenIn: tokenIn,
@@ -190,7 +191,7 @@ contract TokenDelegator {
             deadline: deadline
         });
         nextAutomationActionId++;
-        return nextAutomationActionId;
+        return currentId;
     }
 
     function getAutomationAction(
