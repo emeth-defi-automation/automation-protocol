@@ -201,7 +201,7 @@ contract TokenDelegator {
             block.timestamp >= action.date + action.delay,
             "It is too early to execute this action again."
         );
-
+        // obliczac estimatedAmount
         action.date = block.timestamp;
 
         return
