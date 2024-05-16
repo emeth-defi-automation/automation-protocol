@@ -193,6 +193,16 @@ contract TokenDelegator {
         return nextAutomationActionId;
     }
 
+    function getAutomationAction(
+        uint _id
+    ) public view returns (AutomationsAction memory) {
+        require(
+            _id > 0 && _id < nextAutomationActionId,
+            "Invalid ID: This automation action does not exist."
+        );
+        return actions[_id];
+    }
+
     function executeAction(uint _id) public returns (uint[] memory) {
         require(_id < nextAutomationActionId, "Action does not exist.");
         AutomationsAction storage action = actions[_id];
