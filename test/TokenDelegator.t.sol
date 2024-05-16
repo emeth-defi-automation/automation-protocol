@@ -205,7 +205,9 @@ contract TokenDelegatorTest is Test {
         assertEq(toAddr, to, "To address does not match");
         assertEq(dl, deadline, "Deadline does not match");
         assertEq(delay, delayDays * 1 days, "Delay does not match");
+        assertEq(date, 0, "Date should be 0");
     }
+
     function testGetAutomationAction() public {
         // Add an action to test retrieval
         token.approve(address(tokenDelegator), 500 ether);
@@ -266,7 +268,7 @@ contract TokenDelegatorTest is Test {
     }
 
     // Add a test for invalid ID retrieval
-    function testFailGetAutomationActionInvalidId() public {
+    function testFailGetAutomationActionInvalidId() public view {
         tokenDelegator.getAutomationAction(999); // This ID should not exist
     }
 }
