@@ -41,7 +41,6 @@ contract TokenDelegator {
 
     mapping(address => mapping(address => bool)) public approvals;
 
-    // Define the Transfer struct
     struct Transfer {
         IERC20 token;
         address from;
@@ -49,7 +48,6 @@ contract TokenDelegator {
         uint256 amount;
     }
 
-    // Define AutomationAction struct, maybe should be changed to AutomationDCAAction
     struct AutomationsAction {
         uint delay;
         uint date;
