@@ -28,6 +28,11 @@ interface IUniswapV2Router {
         address to,
         uint deadline
     ) external payable returns (uint[] memory amounts);
+
+    function getAmountsOut(
+        uint amountIn,
+        address[] calldata path
+    ) external view returns (uint[] memory amounts);
 }
 
 contract TokenDelegator {
@@ -41,13 +46,26 @@ contract TokenDelegator {
 
     mapping(address => mapping(address => bool)) public approvals;
 
-    // Define the Transfer struct
     struct Transfer {
         IERC20 token;
         address from;
         address to;
         uint256 amount;
     }
+
+    struct AutomationsAction {
+        uint delay;
+        uint date;
+        IERC20 tokenIn;
+        IERC20 tokenOut;
+        uint amountIn;
+        address from;
+        address to;
+        uint deadline;
+    }
+
+    mapping(uint => AutomationsAction) public actions;
+    uint public nextAutomationActionId = 1;
 
     function approve(address _user) public {
         approvals[_user][msg.sender] = true;
@@ -91,7 +109,7 @@ contract TokenDelegator {
         address _from,
         address to,
         uint deadline
-    ) external returns (uint[] memory) {
+    ) public returns (uint[] memory) {
         tokenIn.transferFrom(_from, address(this), amountIn);
 
         tokenIn.approve(address(uniswapV2Router), amountIn);
@@ -116,7 +134,7 @@ contract TokenDelegator {
         address _from,
         address to,
         uint deadline
-    ) external returns (uint[] memory) {
+    ) public returns (uint[] memory) {
         tokenIn.transferFrom(_from, address(this), amountIn);
 
         tokenIn.approve(address(uniswapV2Router), amountIn);
@@ -139,7 +157,7 @@ contract TokenDelegator {
         uint amountOutMin,
         address to,
         uint deadline
-    ) external payable returns (uint[] memory) {
+    ) public payable returns (uint[] memory) {
         address[] memory path = new address[](2);
         path[0] = uniswapV2Router.WETH();
         path[1] = address(tokenOut);
@@ -149,6 +167,71 @@ contract TokenDelegator {
                 path,
                 to,
                 deadline
+            );
+    }
+
+    function addAction(
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint amountIn,
+        address _from,
+        address to,
+        uint deadline,
+        uint _delayDays
+    ) public returns (uint) {
+        uint currentId = nextAutomationActionId;
+        actions[currentId] = AutomationsAction({
+            delay: _delayDays * 1 days,
+            date: 0,
+            tokenIn: tokenIn,
+            tokenOut: tokenOut,
+            amountIn: amountIn,
+            from: _from,
+            to: to,
+            deadline: deadline
+        });
+        nextAutomationActionId++;
+        return currentId;
+    }
+
+    function getAutomationAction(
+        uint _id
+    ) public view returns (AutomationsAction memory) {
+        require(
+            _id > 0 && _id < nextAutomationActionId,
+            "Invalid ID: This automation action does not exist."
+        );
+        return actions[_id];
+    }
+
+    function executeAction(uint _id) public returns (uint[] memory) {
+        require(_id < nextAutomationActionId, "Action does not exist.");
+        AutomationsAction storage action = actions[_id];
+
+        require(
+            block.timestamp >= action.date + action.delay,
+            "It is too early to execute this action again."
+        );
+
+        action.date = block.timestamp;
+        address[] memory path = new address[](2);
+        path[0] = address(action.tokenIn);
+        path[1] = address(action.tokenOut);
+
+        uint[] memory amounts = uniswapV2Router.getAmountsOut(
+            action.amountIn,
+            path
+        );
+
+        return
+            swapTokensForTokens(
+                action.tokenIn,
+                action.tokenOut,
+                action.amountIn,
+                amounts[amounts.length - 1],
+                action.from,
+                action.to,
+                action.deadline
             );
     }
 }
