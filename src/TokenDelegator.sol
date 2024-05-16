@@ -28,6 +28,11 @@ interface IUniswapV2Router {
         address to,
         uint deadline
     ) external payable returns (uint[] memory amounts);
+
+    function getAmountsOut(
+        uint amountIn,
+        address[] calldata path
+    ) external view returns (uint[] memory amounts);
 }
 
 contract TokenDelegator {
@@ -54,7 +59,6 @@ contract TokenDelegator {
         IERC20 tokenIn;
         IERC20 tokenOut;
         uint amountIn;
-        uint amountOutMin;
         address from;
         address to;
         uint deadline;
@@ -170,7 +174,6 @@ contract TokenDelegator {
         IERC20 tokenIn,
         IERC20 tokenOut,
         uint amountIn,
-        uint amountOutMin,
         address _from,
         address to,
         uint deadline,
@@ -183,7 +186,6 @@ contract TokenDelegator {
             tokenIn: tokenIn,
             tokenOut: tokenOut,
             amountIn: amountIn,
-            amountOutMin: amountOutMin,
             from: _from,
             to: to,
             deadline: deadline
@@ -210,15 +212,23 @@ contract TokenDelegator {
             block.timestamp >= action.date + action.delay,
             "It is too early to execute this action again."
         );
-        // obliczac estimatedAmount
+
         action.date = block.timestamp;
+        address[] memory path = new address[](2);
+        path[0] = address(action.tokenIn);
+        path[1] = address(action.tokenOut);
+
+        uint[] memory amounts = uniswapV2Router.getAmountsOut(
+            action.amountIn,
+            path
+        );
 
         return
             swapTokensForTokens(
                 action.tokenIn,
                 action.tokenOut,
                 action.amountIn,
-                action.amountOutMin,
+                amounts[amounts.length - 1],
                 action.from,
                 action.to,
                 action.deadline
