@@ -171,6 +171,7 @@ contract TokenDelegator {
     }
 
     function addAction(
+        uint actionId,
         IERC20 tokenIn,
         IERC20 tokenOut,
         uint amountIn,
@@ -179,8 +180,7 @@ contract TokenDelegator {
         uint deadline,
         uint _delayDays
     ) public returns (uint) {
-        uint currentId = nextAutomationActionId;
-        actions[currentId] = AutomationsAction({
+        actions[actionId] = AutomationsAction({
             delay: _delayDays * 1 days,
             date: 0,
             tokenIn: tokenIn,
@@ -190,8 +190,8 @@ contract TokenDelegator {
             to: to,
             deadline: deadline
         });
-        nextAutomationActionId++;
-        return currentId;
+
+        return actionId; // Return the ID for confirmation
     }
 
     function getAutomationAction(
