@@ -181,6 +181,8 @@ contract TokenDelegator {
         uint _delayDays
     ) public returns (uint) {
         actions[actionId] = AutomationsAction({
+            require(actions[actionId].date == 0, "Action ID already exists");
+            
             delay: _delayDays * 1 days,
             date: 0,
             tokenIn: tokenIn,
