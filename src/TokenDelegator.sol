@@ -54,7 +54,7 @@ contract TokenDelegator {
     }
 
     struct AutomationsAction {
-        bool initialized; // True if this struct has been initialized
+        bool initialized;
         uint delay;
         uint date;
         IERC20 tokenIn;

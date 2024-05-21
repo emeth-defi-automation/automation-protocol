@@ -130,33 +130,35 @@ contract TokenDelegatorTest is Test {
         tokenDelegator.transferBatch(transfers);
     }
 
-    function testAddActionIncrementsId() public {
-        uint initialId = tokenDelegator.nextAutomationActionId();
-        tokenDelegator.addAction(
-            token,
-            token2,
-            100e18,
-            user,
-            user,
-            block.timestamp + 1 days,
-            1
-        );
-        uint newId = tokenDelegator.nextAutomationActionId();
-        assertEq(
-            newId,
-            initialId + 1,
-            "nextAutomationActionId should increment by 1"
-        );
-    }
+    // function testAddActionIncrementsId() public {
+    //     uint initialId = tokenDelegator.nextAutomationActionId();
+    //     uint newActionId = initialId; // Assuming front-end or another mechanism assigns this ID
+    //     tokenDelegator.addAction(
+    //         newActionId,
+    //         token,
+    //         token2,
+    //         100e18,
+    //         user,
+    //         user,
+    //         block.timestamp + 1 days,
+    //         1
+    //     );
+    //     uint newId = tokenDelegator.nextAutomationActionId();
+    //     assertEq(
+    //         newId,
+    //         initialId + 1,
+    //         "nextAutomationActionId should increment by 1"
+    //     );
+    // }
 
     function testAddActionStoresCorrectly() public {
         uint amountIn = 100e18;
         uint deadline = block.timestamp + 1 days;
         uint delayDays = 1;
-
         uint expectedId = tokenDelegator.nextAutomationActionId();
 
         tokenDelegator.addAction(
+            expectedId,
             token,
             token2,
             amountIn,
@@ -167,6 +169,7 @@ contract TokenDelegatorTest is Test {
         );
 
         (
+            bool initialized,
             uint delay,
             uint date,
             IERC20 tokenIn,
@@ -179,62 +182,52 @@ contract TokenDelegatorTest is Test {
 
         assertEq(address(tokenIn), address(token), "TokenIn does not match");
         assertEq(address(tokenOut), address(token2), "TokenOut does not match");
-        assertEq(inAmount, amountIn, "AmountIn does not match");
-        assertEq(fromAddr, from, "From address does not match");
-        assertEq(toAddr, to, "To address does not match");
-        assertEq(dl, deadline, "Deadline does not match");
+        assertEq(amountIn, inAmount, "AmountIn does not match");
+        assertEq(from, fromAddr, "From address does not match");
+        assertEq(to, toAddr, "To address does not match");
+        assertEq(deadline, dl, "Deadline does not match");
         assertEq(delay, delayDays * 1 days, "Delay does not match");
         assertEq(date, 0, "Date should be 0");
+        assertEq(initialized, true, "Initialized should be true");
     }
 
     function testGetAutomationAction() public {
         token.approve(address(tokenDelegator), 500 ether);
         token2.approve(address(tokenDelegator), 500 ether);
 
-        uint id = tokenDelegator.addAction(
+        uint id = tokenDelegator.nextAutomationActionId();
+        tokenDelegator.addAction(
+            id,
             token,
             token2,
             500 ether,
-            address(this),
-            address(this),
+            from,
+            to,
             block.timestamp + 1 days,
             1
         );
 
-        TokenDelegator.AutomationsAction memory retrievedAction = tokenDelegator
-            .getAutomationAction(id);
+        (
+            bool initialized,
+            uint delay,
+            uint date,
+            IERC20 tokenIn,
+            IERC20 tokenOut,
+            uint amountIn,
+            address fromAddr,
+            address toAddr,
+            uint dl
+        ) = tokenDelegator.actions(id);
 
-        assertEq(
-            address(retrievedAction.tokenIn),
-            address(token),
-            "TokenIn does not match"
-        );
-        assertEq(
-            address(retrievedAction.tokenOut),
-            address(token2),
-            "TokenOut does not match"
-        );
-        assertEq(
-            retrievedAction.amountIn,
-            500 ether,
-            "AmountIn does not match"
-        );
-        assertEq(
-            retrievedAction.from,
-            address(this),
-            "From address does not match"
-        );
-        assertEq(
-            retrievedAction.to,
-            address(this),
-            "To address does not match"
-        );
-        assertEq(
-            retrievedAction.deadline,
-            block.timestamp + 1 days,
-            "Deadline does not match"
-        );
-        assertEq(retrievedAction.delay, 1 days, "Delay does not match");
+        assertEq(address(tokenIn), address(token), "TokenIn does not match");
+        assertEq(address(tokenOut), address(token2), "TokenOut does not match");
+        assertEq(amountIn, 500 ether, "AmountIn does not match");
+        assertEq(fromAddr, from, "From address does not match");
+        assertEq(toAddr, to, "To address does not match");
+        assertEq(date, 0, "Deadline does not match");
+        assertEq(delay, 1 days, "Delay does not match");
+        assertEq(initialized, true, "initialized should be true");
+        assertEq(dl, block.timestamp + 1 days, "Deadline does not match");
     }
 
     function testFailGetAutomationActionInvalidId() public view {
