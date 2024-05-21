@@ -54,6 +54,7 @@ contract TokenDelegator {
     }
 
     struct AutomationsAction {
+        bool initialized; // True if this struct has been initialized
         uint delay;
         uint date;
         IERC20 tokenIn;
@@ -175,25 +176,26 @@ contract TokenDelegator {
         IERC20 tokenIn,
         IERC20 tokenOut,
         uint amountIn,
-        address _from,
+        address from,
         address to,
         uint deadline,
-        uint _delayDays
+        uint delayDays
     ) public returns (uint) {
+        require(!actions[actionId].initialized, "Action ID already exists");
+
         actions[actionId] = AutomationsAction({
-            require(actions[actionId].date == 0, "Action ID already exists");
-            
-            delay: _delayDays * 1 days,
+            initialized: true,
+            delay: delayDays * 1 days,
             date: 0,
             tokenIn: tokenIn,
             tokenOut: tokenOut,
             amountIn: amountIn,
-            from: _from,
+            from: from,
             to: to,
             deadline: deadline
         });
 
-        return actionId; // Return the ID for confirmation
+        return actionId;
     }
 
     function getAutomationAction(
