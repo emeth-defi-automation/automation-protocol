@@ -176,21 +176,21 @@ contract TokenDelegator {
         IERC20 tokenIn,
         IERC20 tokenOut,
         uint amountIn,
-        address from,
+        address _from,
         address to,
         uint deadline,
-        uint delayDays
+        uint _delayDays
     ) public returns (uint) {
         require(!actions[actionId].initialized, "Action ID already exists");
 
         actions[actionId] = AutomationsAction({
             initialized: true,
-            delay: delayDays * 1 days,
+            delay: _delayDays * 1 days,
             date: 0,
             tokenIn: tokenIn,
             tokenOut: tokenOut,
             amountIn: amountIn,
-            from: from,
+            from: _from,
             to: to,
             deadline: deadline
         });
