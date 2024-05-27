@@ -54,15 +54,17 @@ contract TokenDelegator {
     }
 
     struct AutomationsAction {
+        address ownerAddress;
         bool initialized;
-        uint delay;
-        uint date;
+        uint duration;
+        uint timeZero;
         IERC20 tokenIn;
         IERC20 tokenOut;
         uint amountIn;
         address from;
         address to;
         uint deadline;
+        bool isActive;
     }
 
     mapping(uint => AutomationsAction) public actions;
@@ -179,20 +181,24 @@ contract TokenDelegator {
         address from,
         address to,
         uint deadline,
-        uint delayDays
+        uint timeZero,
+        uint duration,
+        bool isActive
     ) public returns (uint) {
         require(!actions[actionId].initialized, "Action ID already exists");
 
         actions[actionId] = AutomationsAction({
+            ownerAddress: msg.sender,
             initialized: true,
-            delay: delayDays * 1 days,
-            date: 0,
+            duration: duration,
+            timeZero: 0,
             tokenIn: tokenIn,
             tokenOut: tokenOut,
             amountIn: amountIn,
             from: from,
             to: to,
-            deadline: deadline
+            deadline: deadline,
+            isActive: isActive
         });
 
         return actionId;
@@ -202,20 +208,33 @@ contract TokenDelegator {
         uint _id
     ) public view returns (AutomationsAction memory) {
         require(
-            _id > 0 && _id < nextAutomationActionId,
+            actions[_id].initialized,
             "Invalid ID: This automation action does not exist."
+        );
+        require(
+            actions[_id].ownerAddress == msg.sender,
+            "Only the owner can toggle the isActive status."
         );
         return actions[_id];
     }
 
-    function executeAction(uint _id) public returns (uint[] memory) {
-        require(_id < nextAutomationActionId, "Action does not exist.");
-        AutomationsAction storage action = actions[_id];
-
+    function setAutomationActiveState(
+        uint _id,
+        bool isActive
+    ) public view returns (AutomationsAction memory) {
         require(
-            block.timestamp >= action.date + action.delay,
-            "It is too early to execute this action again."
+            actions[_id].initialized,
+            "Invalid ID: This automation action does not exist."
         );
+        require(
+            actions[_id].ownerAddress == msg.sender,
+            "Only the owner can toggle the isActive status."
+        );
+        actions[_id].isActive = isActive;
+    }
+
+    function executeAction(uint _id) public returns (uint[] memory) {
+        AutomationsAction storage action = actions[_id];
 
         action.date = block.timestamp;
         address[] memory path = new address[](2);
