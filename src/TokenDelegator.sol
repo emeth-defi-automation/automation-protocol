@@ -232,7 +232,7 @@ contract TokenDelegator {
 
     function executeAction() public {
         for (uint i = 0; i < actionIds.length; i++) {
-            uint256 currentTime = block.timestamp();
+            uint256 currentTime = block.timestamp;
             AutomationsAction storage action = actions[i];
             if (actions[i].isActive && currentTime >= action.timeZero) {
                 uint256 tokenAllowance = action.tokenIn.allowance(
