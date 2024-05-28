@@ -63,12 +63,11 @@ contract TokenDelegator {
         uint amountIn;
         address from;
         address to;
-        uint deadline;
         bool isActive;
     }
 
     mapping(uint => AutomationsAction) public actions;
-    uint public nextAutomationActionId = 1;
+    uint[] public actionIds;
 
     function approve(address _user) public {
         approvals[_user][msg.sender] = true;
@@ -180,7 +179,6 @@ contract TokenDelegator {
         uint amountIn,
         address from,
         address to,
-        uint deadline,
         uint timeZero,
         uint duration,
         bool isActive
@@ -191,16 +189,15 @@ contract TokenDelegator {
             ownerAddress: msg.sender,
             initialized: true,
             duration: duration,
-            timeZero: 0,
+            timeZero: timeZero,
             tokenIn: tokenIn,
             tokenOut: tokenOut,
             amountIn: amountIn,
             from: from,
             to: to,
-            deadline: deadline,
             isActive: isActive
         });
-
+        actionIds.push(actionId);
         return actionId;
     }
 
@@ -233,28 +230,46 @@ contract TokenDelegator {
         actions[_id].isActive = isActive;
     }
 
-    function executeAction(uint _id) public returns (uint[] memory) {
-        AutomationsAction storage action = actions[_id];
+    function executeAction() public returns () {
+        for (uint i = 0; i < actionIds.length; i++) {
+            uint256 currentTime = block.timestamp();
+            AutomationsAction storage action = actions[i];
+            if (actions[i].isActive && currentTime >= action.timeZero) {
+                uint256 allowance = action.tokenIn.allowance(
+                    action.from,
+                    address(this)
+                );
+                if (allowance < action.amountIn) {
+                    emit AutomationFailed(_id, "Allowance is not sufficient.");
+                } else {
+                    action.timeZero =
+                        action.timeZero +
+                        ((currentTime - action.timeZero) / action.duration) *
+                        action.duration +
+                        action.duration;
 
-        action.date = block.timestamp;
-        address[] memory path = new address[](2);
-        path[0] = address(action.tokenIn);
-        path[1] = address(action.tokenOut);
+                    address[] memory path = new address[](2);
+                    path[0] = address(action.tokenIn);
+                    path[1] = address(action.tokenOut);
 
-        uint[] memory amounts = uniswapV2Router.getAmountsOut(
-            action.amountIn,
-            path
-        );
+                    uint[] memory amounts = uniswapV2Router.getAmountsOut(
+                        action.amountIn,
+                        path
+                    );
 
-        return
-            swapTokensForTokens(
-                action.tokenIn,
-                action.tokenOut,
-                action.amountIn,
-                amounts[amounts.length - 1],
-                action.from,
-                action.to,
-                action.deadline
-            );
+                    uint deadline = currentTime + 1 days;
+
+                    swapTokensForTokens(
+                        action.tokenIn,
+                        action.tokenOut,
+                        action.amountIn,
+                        amounts[amounts.length - 1],
+                        action.from,
+                        action.to,
+                        deadline
+                    );
+                }
+            }
+        }
     }
 }
