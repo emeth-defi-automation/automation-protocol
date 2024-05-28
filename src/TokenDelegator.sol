@@ -230,18 +230,16 @@ contract TokenDelegator {
         actions[_id].isActive = isActive;
     }
 
-    function executeAction() public returns () {
+    function executeAction() public {
         for (uint i = 0; i < actionIds.length; i++) {
             uint256 currentTime = block.timestamp();
             AutomationsAction storage action = actions[i];
             if (actions[i].isActive && currentTime >= action.timeZero) {
-                uint256 allowance = action.tokenIn.allowance(
+                uint256 tokenAllowance = action.tokenIn.allowance(
                     action.from,
                     address(this)
                 );
-                if (allowance < action.amountIn) {
-                    emit AutomationFailed(_id, "Allowance is not sufficient.");
-                } else {
+                if (tokenAllowance > action.amountIn) {
                     action.timeZero =
                         action.timeZero +
                         ((currentTime - action.timeZero) / action.duration) *
