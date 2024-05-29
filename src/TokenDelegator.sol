@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
-
+import "forge-std/console.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 interface IUniswapV2Router {
@@ -37,7 +37,8 @@ interface IUniswapV2Router {
 
 contract TokenDelegator {
     IUniswapV2Router public uniswapV2Router;
-
+    event ActionExecuted(uint actionId, uint newTimeZero);
+    event ActionFailed(uint actionId, string reason);
     constructor() {
         uniswapV2Router = IUniswapV2Router(
             0x87aE49902B749588c15c5FE2A6fE6a1067a5bea0
@@ -215,10 +216,7 @@ contract TokenDelegator {
         return actions[_id];
     }
 
-    function setAutomationActiveState(
-        uint _id,
-        bool isActive
-    ) public view returns (AutomationsAction memory) {
+    function setAutomationActiveState(uint _id, bool isActive) public {
         require(
             actions[_id].initialized,
             "Invalid ID: This automation action does not exist."
@@ -233,41 +231,60 @@ contract TokenDelegator {
     function executeAction() public {
         for (uint i = 0; i < actionIds.length; i++) {
             uint256 currentTime = block.timestamp;
-            AutomationsAction storage action = actions[i];
-            if (actions[i].isActive && currentTime >= action.timeZero) {
+            uint actionId = actionIds[i];
+            AutomationsAction storage action = actions[actionId];
+            console.log("Checking action", actionId);
+            console.log("IsActive:", action.isActive);
+            console.log("Current Time:", currentTime);
+            console.log("TimeZero:", action.timeZero);
+            if (action.isActive && currentTime >= action.timeZero) {
                 uint256 tokenAllowance = action.tokenIn.allowance(
                     action.from,
                     address(this)
                 );
-                if (tokenAllowance > action.amountIn) {
+                console.log("Token Allowance:", tokenAllowance);
+                if (tokenAllowance >= action.amountIn) {
                     action.timeZero =
                         action.timeZero +
                         ((currentTime - action.timeZero) / action.duration) *
                         action.duration +
                         action.duration;
+                    console.log("New TimeZero:", action.timeZero);
 
                     address[] memory path = new address[](2);
                     path[0] = address(action.tokenIn);
                     path[1] = address(action.tokenOut);
+                    console.log("path: ", path[0], path[1]);
+                    console.log("amountin: ", action.amountIn);
 
                     uint[] memory amounts = uniswapV2Router.getAmountsOut(
                         action.amountIn,
                         path
                     );
+                    console.log("amounts");
 
                     uint deadline = currentTime + 1 days;
-
-                    swapTokensForTokens(
-                        action.tokenIn,
-                        action.tokenOut,
-                        action.amountIn,
-                        amounts[amounts.length - 1],
-                        action.from,
-                        action.to,
-                        deadline
-                    );
+                    console.log("swapping");
+                    try
+                        uniswapV2Router.swapExactTokensForTokens(
+                            action.amountIn,
+                            amounts[amounts.length - 1],
+                            path,
+                            action.to,
+                            deadline
+                        )
+                    {
+                        console.log("swapped");
+                        emit ActionExecuted(actionId, action.timeZero);
+                    } catch {
+                        console.log("not swapped");
+                        emit ActionFailed(actionId, "Swap failed");
+                    }
+                } else {
+                    emit ActionFailed(actionId, "Insufficient allowance");
                 }
             }
         }
+        console.log("executed");
     }
 }
