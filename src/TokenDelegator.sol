@@ -178,7 +178,7 @@ contract TokenDelegator {
         IERC20 tokenIn,
         IERC20 tokenOut,
         uint amountIn,
-        address from,
+        address _from,
         address to,
         uint timeZero,
         uint duration,
@@ -194,7 +194,7 @@ contract TokenDelegator {
             tokenIn: tokenIn,
             tokenOut: tokenOut,
             amountIn: amountIn,
-            from: from,
+            from: _from,
             to: to,
             isActive: isActive
         });
