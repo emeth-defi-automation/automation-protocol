@@ -233,58 +233,40 @@ contract TokenDelegator {
             uint256 currentTime = block.timestamp;
             uint actionId = actionIds[i];
             AutomationsAction storage action = actions[actionId];
-            console.log("Checking action", actionId);
-            console.log("IsActive:", action.isActive);
-            console.log("Current Time:", currentTime);
-            console.log("TimeZero:", action.timeZero);
-            if (action.isActive && currentTime >= action.timeZero) {
-                uint256 tokenAllowance = action.tokenIn.allowance(
-                    action.from,
-                    address(this)
+
+            if (
+                action.isActive &&
+                currentTime >= action.timeZero &&
+                action.tokenIn.allowance(action.from, address(this)) >=
+                action.amountIn
+            ) {
+                action.timeZero =
+                    action.timeZero +
+                    ((currentTime - action.timeZero) / action.duration) *
+                    action.duration +
+                    action.duration;
+
+                address[] memory path = new address[](2);
+                path[0] = address(action.tokenIn);
+                path[1] = address(action.tokenOut);
+
+                uint[] memory amounts = uniswapV2Router.getAmountsOut(
+                    action.amountIn,
+                    path
                 );
-                console.log("Token Allowance:", tokenAllowance);
-                if (tokenAllowance >= action.amountIn) {
-                    action.timeZero =
-                        action.timeZero +
-                        ((currentTime - action.timeZero) / action.duration) *
-                        action.duration +
-                        action.duration;
-                    console.log("New TimeZero:", action.timeZero);
 
-                    address[] memory path = new address[](2);
-                    path[0] = address(action.tokenIn);
-                    path[1] = address(action.tokenOut);
-                    console.log("path: ", path[0], path[1]);
-                    console.log("amountin: ", action.amountIn);
+                uint deadline = currentTime + 1 days;
 
-                    uint[] memory amounts = uniswapV2Router.getAmountsOut(
-                        action.amountIn,
-                        path
-                    );
-                    console.log("amounts");
-
-                    uint deadline = currentTime + 1 days;
-                    console.log("swapping");
-                    try
-                        uniswapV2Router.swapExactTokensForTokens(
-                            action.amountIn,
-                            amounts[amounts.length - 1],
-                            path,
-                            action.to,
-                            deadline
-                        )
-                    {
-                        console.log("swapped");
-                        emit ActionExecuted(actionId, action.timeZero);
-                    } catch {
-                        console.log("not swapped");
-                        emit ActionFailed(actionId, "Swap failed");
-                    }
-                } else {
-                    emit ActionFailed(actionId, "Insufficient allowance");
-                }
+                swapTokensForTokens(
+                    action.tokenIn,
+                    action.tokenOut,
+                    action.amountIn,
+                    amounts[amounts.length - 1],
+                    action.from,
+                    action.to,
+                    deadline
+                );
             }
         }
-        console.log("executed");
     }
 }
