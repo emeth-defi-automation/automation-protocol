@@ -269,4 +269,43 @@ contract TokenDelegator {
             }
         }
     }
+
+    function executeActionById(uint actionId, uint amounts) public {
+        uint256 currentTime = block.timestamp;
+        AutomationsAction storage action = actions[actionId];
+
+        if (
+            action.isActive &&
+            currentTime >= action.timeZero &&
+            action.tokenIn.allowance(action.from, address(this)) >=
+            action.amountIn
+        ) {
+            action.timeZero =
+                action.timeZero +
+                ((currentTime - action.timeZero) / action.duration) *
+                action.duration +
+                action.duration;
+
+            address[] memory path = new address[](2);
+            path[0] = address(action.tokenIn);
+            path[1] = address(action.tokenOut);
+
+            // uint[] memory amounts = uniswapV2Router.getAmountsOut(
+            //     action.amountIn,
+            //     path
+            // );
+
+            uint deadline = currentTime + 180;
+
+            swapTokensForTokens(
+                action.tokenIn,
+                action.tokenOut,
+                action.amountIn,
+                amounts,
+                action.from,
+                action.to,
+                deadline
+            );
+        }
+    }
 }
