@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 import "forge-std/console.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 interface IUniswapV2Router {
     function WETH() external pure returns (address);
@@ -37,8 +36,7 @@ interface IUniswapV2Router {
 
 contract TokenDelegator {
     IUniswapV2Router public uniswapV2Router;
-    event ActionExecuted(uint actionId, uint newTimeZero);
-    event ActionFailed(uint actionId, string reason);
+
     constructor() {
         uniswapV2Router = IUniswapV2Router(
             0x87aE49902B749588c15c5FE2A6fE6a1067a5bea0
