@@ -45,6 +45,11 @@ contract TokenDelegator {
 
     mapping(address => mapping(address => bool)) public approvals;
 
+    struct Payment {
+        IERC20 token;
+        uint256 amount;
+    }
+
     struct Transfer {
         IERC20 token;
         address from;
@@ -200,6 +205,19 @@ contract TokenDelegator {
         return actionId;
     }
 
+       function addActionExternal(
+        uint actionId,
+        address _contractAddress,
+        // Payment[] payments, move to execute
+        uint[] args
+    ) public returns (uint) {
+        require(!actions[actionId].initialized, "Action ID already exists");
+
+        bytes memory data = abi.encodeWithSignature("addAction(uint256,uint256[])", actionId, args);
+
+        return (bool success) = contractAddress.call(data);
+    }
+   
     function getAutomationAction(
         uint _id
     ) public view returns (AutomationsAction memory) {
