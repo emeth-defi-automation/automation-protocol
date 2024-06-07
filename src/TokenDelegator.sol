@@ -46,16 +46,22 @@ contract TokenDelegator {
 
     mapping(address => mapping(address => bool)) public approvals;
 
-    struct Payment {
-        uint256 amount;
-        IERC20 token;
-    }
-
     struct Transfer {
         IERC20 token;
         address from;
         address to;
         uint256 amount;
+    }
+
+    struct TokenAmount {
+        address from;
+        IERC20 token;
+        uint amountIn;
+    }
+
+    struct Payment {
+        address contractAddress;
+        TokenAmount[] tokensAmounts;
     }
 
     struct AutomationsAction {
@@ -71,6 +77,7 @@ contract TokenDelegator {
         bool isActive;
     }
 
+    mapping(uint => Payment) public payments;
     mapping(uint => AutomationsAction) public actions;
     uint[] public actionIds;
 
