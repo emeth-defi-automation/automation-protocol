@@ -60,4 +60,29 @@ contract TransferAutomation {
         actionIds.push(actionId);
         return actionId;
     }
+
+    function getActionById(
+        uint actionId
+    )
+        public
+        view
+        returns (
+            address ownerAddress,
+            bool initialized,
+            uint duration,
+            uint timeZero,
+            bool isActive,
+            Transfer[] memory transfers
+        )
+    {
+        TransferAction storage action = actions[actionId];
+        return (
+            action.ownerAddress,
+            action.initialized,
+            action.duration,
+            action.timeZero,
+            action.isActive,
+            action.transfers
+        );
+    }
 }
