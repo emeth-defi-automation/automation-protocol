@@ -88,6 +88,7 @@ contract TransferAutomation {
 
     function deleteAction(uint actionId) public {
         require(actions[actionId].initialized, "Action does not exist");
+        actions[actionId].isActive = false;
         actions[actionId].initialized = false;
     }
 
