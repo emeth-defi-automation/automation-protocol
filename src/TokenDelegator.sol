@@ -216,7 +216,7 @@ contract TokenDelegator {
     function addActionExternal(
         uint actionId,
         address _contractAddress,
-        // Payment[] payments, move to execute
+        TokenAmount[] calldata tokensAmounts,
         uint[] calldata args
     ) public returns (bool) {
         require(!actions[actionId].initialized, "Action ID already exists");
@@ -228,6 +228,11 @@ contract TokenDelegator {
         );
         (bool success, ) = _contractAddress.call(data);
         require(success, "External call failed");
+
+        payments[actionId].contractAddress = _contractAddress;
+        for (uint i = 0; i < tokensAmounts.length; i++) {
+            payments[actionId].tokensAmounts.push(tokensAmounts[i]);
+        }
 
         return success;
     }
