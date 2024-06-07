@@ -84,4 +84,37 @@ contract SwapAutomation {
         actionIds.push(actionId);
         return actionId;
     }
+
+    function getActionById(
+        uint actionId
+    )
+        public
+        view
+        returns (
+            address ownerAddress,
+            bool initialized,
+            uint duration,
+            uint timeZero,
+            IERC20 tokenIn,
+            IERC20 tokenOut,
+            uint amountIn,
+            address from,
+            address to,
+            bool isActive
+        )
+    {
+        SwapAction storage action = actions[actionId];
+        return (
+            action.ownerAddress,
+            action.initialized,
+            action.duration,
+            action.timeZero,
+            action.tokenIn,
+            action.tokenOut,
+            action.amountIn,
+            action.from,
+            action.to,
+            action.isActive
+        );
+    }
 }
