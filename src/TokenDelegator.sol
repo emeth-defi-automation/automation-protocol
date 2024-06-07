@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 import "forge-std/console.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 interface IUniswapV2Router {
     function WETH() external pure returns (address);
@@ -46,8 +47,8 @@ contract TokenDelegator {
     mapping(address => mapping(address => bool)) public approvals;
 
     struct Payment {
-        IERC20 token;
         uint256 amount;
+        IERC20 token;
     }
 
     struct Transfer {
@@ -205,19 +206,25 @@ contract TokenDelegator {
         return actionId;
     }
 
-       function addActionExternal(
+    function addActionExternal(
         uint actionId,
         address _contractAddress,
         // Payment[] payments, move to execute
-        uint[] args
-    ) public returns (uint) {
+        uint[] calldata args
+    ) public returns (bool) {
         require(!actions[actionId].initialized, "Action ID already exists");
 
-        bytes memory data = abi.encodeWithSignature("addAction(uint256,uint256[])", actionId, args);
+        bytes memory data = abi.encodeWithSignature(
+            "addAction(uint256,uint256[])",
+            actionId,
+            args
+        );
+        (bool success, ) = _contractAddress.call(data);
+        require(success, "External call failed");
 
-        return (bool success) = contractAddress.call(data);
+        return success;
     }
-   
+
     function getAutomationAction(
         uint _id
     ) public view returns (AutomationsAction memory) {
@@ -244,45 +251,48 @@ contract TokenDelegator {
         actions[_id].isActive = isActive;
     }
 
-    function executeAction() public {
-        for (uint i = 0; i < actionIds.length; i++) {
-            uint256 currentTime = block.timestamp;
-            uint actionId = actionIds[i];
-            AutomationsAction storage action = actions[actionId];
+    function executeAction(uint actionId) public {
+        require(
+            actions[actionId].initialized,
+            "Invalid ID: This automation action does not exist."
+        );
+        uint256 currentTime = block.timestamp;
 
-            if (
-                action.isActive &&
-                currentTime >= action.timeZero &&
-                action.tokenIn.allowance(action.from, address(this)) >=
-                action.amountIn
-            ) {
-                action.timeZero =
-                    action.timeZero +
-                    ((currentTime - action.timeZero) / action.duration) *
-                    action.duration +
-                    action.duration;
+        AutomationsAction storage action = actions[actionId];
 
-                address[] memory path = new address[](2);
-                path[0] = address(action.tokenIn);
-                path[1] = address(action.tokenOut);
+        require(action.isActive, "Action is not active");
+        require(currentTime >= action.timeZero, "It's too early");
+        require(
+            action.tokenIn.allowance(action.from, address(this)) >=
+                action.amountIn,
+            "Not enough allowance"
+        );
 
-                uint[] memory amounts = uniswapV2Router.getAmountsOut(
-                    action.amountIn,
-                    path
-                );
+        action.timeZero =
+            action.timeZero +
+            ((currentTime - action.timeZero) / action.duration) *
+            action.duration +
+            action.duration;
 
-                uint deadline = currentTime + 1 days;
+        address[] memory path = new address[](2);
+        path[0] = address(action.tokenIn);
+        path[1] = address(action.tokenOut);
 
-                swapTokensForTokens(
-                    action.tokenIn,
-                    action.tokenOut,
-                    action.amountIn,
-                    amounts[amounts.length - 1],
-                    action.from,
-                    action.to,
-                    deadline
-                );
-            }
-        }
+        uint[] memory amounts = uniswapV2Router.getAmountsOut(
+            action.amountIn,
+            path
+        );
+
+        uint deadline = currentTime + 1 days;
+
+        swapTokensForTokens(
+            action.tokenIn,
+            action.tokenOut,
+            action.amountIn,
+            amounts[amounts.length - 1],
+            action.from,
+            action.to,
+            deadline
+        );
     }
 }

@@ -22,31 +22,40 @@ contract TransferAutomation {
     mapping(uint => TransferAction) public actions;
     uint[] public actionIds;
 
-    function addAction(uint actionId, uint[] action) public returns (uint) {
+    function uintToBool(uint value) public pure returns (bool) {
+        return value != 0;
+    }
+
+    function addAction(
+        uint actionId,
+        uint[] calldata action
+    ) public returns (uint) {
         require(!actions[actionId].initialized, "Action ID already exists");
 
-        uint transfersCount = action[0];
+        uint transfersCount = action[5];
 
         Transfer[] memory transfers = new Transfer[](transfersCount);
 
         for (uint i = 0; i < transfersCount; i++) {
-            uint index = 1 + i * 4;
+            uint index = 6 + i * 4;
             transfers[i] = Transfer({
-                token: address(input[index]),
-                from: address(input[index + 1]),
-                to: address(input[index + 2]),
-                amount: input[index + 3]
+                token: IERC20(address(uint160(action[index]))),
+                from: address(uint160(action[index + 1])),
+                to: address(uint160(action[index + 2])),
+                amount: action[index + 3]
             });
         }
 
-        actions[actionId] = TransferAction({
-            ownerAddress: action[0],
-            initialized: action[1],
-            duration: action[2],
-            timeZero: action[3],
-            isActive: action[4],
-            transfers: transfers
-        });
+        TransferAction storage newAction = actions[actionId];
+        newAction.ownerAddress = address(uint160(action[0]));
+        newAction.initialized = uintToBool(action[1]);
+        newAction.duration = action[2];
+        newAction.timeZero = action[3];
+        newAction.isActive = uintToBool(action[4]);
+
+        for (uint i = 0; i < transfersCount; i++) {
+            newAction.transfers.push(transfers[i]);
+        }
 
         actionIds.push(actionId);
         return actionId;
