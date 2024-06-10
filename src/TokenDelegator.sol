@@ -217,7 +217,7 @@ contract TokenDelegator {
         uint actionId,
         address _contractAddress,
         TokenAmount[] calldata tokensAmounts,
-        uint[] calldata args
+        uint256[] calldata args
     ) public returns (bool) {
         require(!actions[actionId].initialized, "Action ID already exists");
 

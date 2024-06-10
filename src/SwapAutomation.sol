@@ -65,7 +65,7 @@ contract SwapAutomation {
 
     function addAction(
         uint actionId,
-        uint[] calldata action
+        uint256[] calldata action
     ) public returns (uint) {
         require(!actions[actionId].initialized, "Action ID already exists");
 
