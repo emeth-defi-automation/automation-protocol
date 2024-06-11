@@ -183,7 +183,7 @@ contract TokenDelegator {
                 deadline
             );
     }
-
+    // old add action
     function addAction(
         uint actionId,
         IERC20 tokenIn,
@@ -262,7 +262,7 @@ contract TokenDelegator {
         );
         actions[_id].isActive = isActive;
     }
-
+    // old execution action
     function executeAction(uint actionId) public {
         require(
             actions[actionId].initialized,
