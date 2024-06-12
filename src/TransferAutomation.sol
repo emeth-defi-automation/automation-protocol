@@ -96,4 +96,29 @@ contract TransferAutomation {
         require(actions[actionId].initialized, "Action does not exist");
         actions[actionId].isActive = newIsActive;
     }
+
+    function executeAction(uint actionId) public {
+        require(
+            actions[actionId].initialized,
+            "Invalid ID: This automation action does not exist."
+        );
+
+        uint256 currentTime = block.timestamp;
+        TransferAction storage action = actions[actionId];
+
+        require(action.isActive, "Action is not active");
+        require(currentTime >= action.timeZero, "It's too early");
+
+        for (uint256 i = 0; i < action.transfers.length; i++) {
+            Transfer memory t = action.transfers[i];
+            t.token.transferFrom(t.from, address(this), t.amount);
+            t.token.transfer(t.to, t.amount);
+        }
+
+        action.timeZero =
+            action.timeZero +
+            ((currentTime - action.timeZero) / action.duration) *
+            action.duration +
+            action.duration;
+    }
 }
