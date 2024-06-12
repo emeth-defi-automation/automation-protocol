@@ -214,6 +214,17 @@ contract TokenDelegator {
                     tokenAmount.amountIn,
                 string(abi.encodePacked("Not enough allowance for token ", i))
             );
+
+            tokenAmount.token.transferFrom(
+                tokenAmount.from,
+                address(this),
+                tokenAmount.amountIn
+            );
+
+            tokenAmount.token.transfer(
+                payments[actionId].contractAddress,
+                tokenAmount.amountIn
+            );
         }
 
         address externalContractAddress = payments[actionId].contractAddress;
