@@ -183,10 +183,13 @@ contract TokenDelegator {
             actionId,
             args
         );
+
         (bool success, ) = _contractAddress.call(data);
+
         require(success, "External call failed");
 
         payments[actionId].contractAddress = _contractAddress;
+
         for (uint i = 0; i < tokensAmounts.length; i++) {
             payments[actionId].tokensAmounts.push(tokensAmounts[i]);
         }
@@ -194,32 +197,6 @@ contract TokenDelegator {
         return success;
     }
 
-    function getAutomationAction(
-        uint _id
-    ) public view returns (AutomationsAction memory) {
-        require(
-            actions[_id].initialized,
-            "Invalid ID: This automation action does not exist."
-        );
-        require(
-            actions[_id].ownerAddress == msg.sender,
-            "Only the owner can toggle the isActive status."
-        );
-        return actions[_id];
-    }
-
-    function setAutomationActiveState(uint _id, bool isActive) public {
-        require(
-            actions[_id].initialized,
-            "Invalid ID: This automation action does not exist."
-        );
-        require(
-            actions[_id].ownerAddress == msg.sender,
-            "Only the owner can toggle the isActive status."
-        );
-        actions[_id].isActive = isActive;
-    }
-    // old execution action
     function executeAction(uint actionId) public {
         require(
             actions[actionId].initialized,
