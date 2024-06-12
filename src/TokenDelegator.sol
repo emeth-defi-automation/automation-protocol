@@ -198,6 +198,29 @@ contract TokenDelegator {
 
         return success;
     }
+    function getPaymentById(
+        uint actionId
+    )
+        public
+        view
+        returns (
+            address contractAddress,
+            bool initialized,
+            TokenAmount[] memory tokensAmounts
+        )
+    {
+        require(
+            payments[actionId].initialized,
+            "Invalid ID: This payment action does not exist."
+        );
+
+        Payment storage payment = payments[actionId];
+        return (
+            payment.contractAddress,
+            payment.initialized,
+            payment.tokensAmounts
+        );
+    }
 
     function executeAction(uint actionId) public returns (bool) {
         require(
@@ -216,16 +239,13 @@ contract TokenDelegator {
                 string(abi.encodePacked("Not enough allowance for token ", i))
             );
 
-            tokenAmount.token.transferFrom(
+            bool transferSuccess = tokenAmount.token.transferFrom(
                 tokenAmount.from,
                 externalContractAddress,
                 tokenAmount.amountIn
             );
 
-            // tokenAmount.token.transfer(
-            //     payments[actionId].contractAddress,
-            //     tokenAmount.amountIn
-            // );
+            require(transferSuccess, "Token transfer failed");
         }
 
         bytes memory data = abi.encodeWithSignature(
