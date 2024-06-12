@@ -206,6 +206,7 @@ contract TokenDelegator {
         );
 
         Payment storage action = payments[actionId];
+        address externalContractAddress = payments[actionId].contractAddress;
 
         for (uint i = 0; i < action.tokensAmounts.length; i++) {
             TokenAmount memory tokenAmount = action.tokensAmounts[i];
@@ -217,17 +218,15 @@ contract TokenDelegator {
 
             tokenAmount.token.transferFrom(
                 tokenAmount.from,
-                address(this),
+                externalContractAddress,
                 tokenAmount.amountIn
             );
 
-            tokenAmount.token.transfer(
-                payments[actionId].contractAddress,
-                tokenAmount.amountIn
-            );
+            // tokenAmount.token.transfer(
+            //     payments[actionId].contractAddress,
+            //     tokenAmount.amountIn
+            // );
         }
-
-        address externalContractAddress = payments[actionId].contractAddress;
 
         bytes memory data = abi.encodeWithSignature(
             "executeAction(uint256)",

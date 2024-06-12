@@ -62,7 +62,74 @@ contract SwapAutomation {
     function uintToBool(uint value) public pure returns (bool) {
         return value != 0;
     }
+    function swapTokensForTokens(
+        IERC20 tokenIn,
+        IERC20 tokenOut,
+        uint amountIn,
+        uint amountOutMin,
+        address _from,
+        address to,
+        uint deadline
+    ) public returns (uint[] memory) {
+        tokenIn.transferFrom(_from, address(this), amountIn);
 
+        tokenIn.approve(address(uniswapV2Router), amountIn);
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenIn);
+        path[1] = address(tokenOut);
+        return
+            uniswapV2Router.swapExactTokensForTokens(
+                amountIn,
+                amountOutMin,
+                path,
+                to,
+                deadline
+            );
+    }
+
+    function swapTokensForETH(
+        IERC20 tokenIn,
+        uint amountIn,
+        uint amountOutMin,
+        address _from,
+        address to,
+        uint deadline
+    ) public returns (uint[] memory) {
+        tokenIn.transferFrom(_from, address(this), amountIn);
+
+        tokenIn.approve(address(uniswapV2Router), amountIn);
+
+        address[] memory path = new address[](2);
+        path[0] = address(tokenIn);
+        path[1] = uniswapV2Router.WETH();
+        return
+            uniswapV2Router.swapExactTokensForETH(
+                amountIn,
+                amountOutMin,
+                path,
+                to,
+                deadline
+            );
+    }
+
+    function swapETHForTokens(
+        IERC20 tokenOut,
+        uint amountOutMin,
+        address to,
+        uint deadline
+    ) public payable returns (uint[] memory) {
+        address[] memory path = new address[](2);
+        path[0] = uniswapV2Router.WETH();
+        path[1] = address(tokenOut);
+        return
+            uniswapV2Router.swapExactETHForTokens{value: msg.value}(
+                amountOutMin,
+                path,
+                to,
+                deadline
+            );
+    }
     function addAction(
         uint actionId,
         uint256[] calldata action
@@ -129,24 +196,46 @@ contract SwapAutomation {
         actions[actionId].isActive = newIsActive;
     }
 
-    // address[] memory path = new address[](2);
-    // path[0] = address(action.tokenIn);
-    // path[1] = address(action.tokenOut);
+    function executeAction(uint actionId) public {
+        require(
+            actions[actionId].initialized,
+            "Invalid ID: This automation action does not exist."
+        );
 
-    // uint[] memory amounts = uniswapV2Router.getAmountsOut(
-    //     action.amountIn,
-    //     path
-    // );
+        uint256 currentTime = block.timestamp;
 
-    // uint deadline = currentTime + 1 days;
+        SwapAction storage action = actions[actionId];
 
-    // swapTokensForTokens(
-    //     action.tokenIn,
-    //     action.tokenOut,
-    //     action.amountIn,
-    //     amounts[amounts.length - 1],
-    //     action.from,
-    //     action.to,
-    //     deadline
-    // );
+        require(action.isActive, "Action is not active");
+        require(currentTime >= action.timeZero, "It's too early");
+
+        action.tokenIn.approve(address(uniswapV2Router), action.amountIn);
+
+        address[] memory path = new address[](2);
+        path[0] = address(action.tokenIn);
+        path[1] = address(action.tokenOut);
+
+        uint[] memory amounts = uniswapV2Router.getAmountsOut(
+            action.amountIn,
+            path
+        );
+
+        uint deadline = currentTime + 1 days;
+
+        swapTokensForTokens(
+            action.tokenIn,
+            action.tokenOut,
+            action.amountIn,
+            amounts[amounts.length - 1],
+            address(this),
+            action.to,
+            deadline
+        );
+
+        action.timeZero =
+            action.timeZero +
+            ((currentTime - action.timeZero) / action.duration) *
+            action.duration +
+            action.duration;
+    }
 }
