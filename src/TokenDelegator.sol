@@ -64,21 +64,7 @@ contract TokenDelegator {
         TokenAmount[] tokensAmounts;
     }
 
-    struct AutomationsAction {
-        address ownerAddress;
-        bool initialized;
-        uint duration;
-        uint timeZero;
-        IERC20 tokenIn;
-        IERC20 tokenOut;
-        uint amountIn;
-        address from;
-        address to;
-        bool isActive;
-    }
-
     mapping(uint => Payment) public payments;
-    mapping(uint => AutomationsAction) public actions;
     uint[] public actionIds;
 
     function approve(address _user) public {
@@ -183,35 +169,6 @@ contract TokenDelegator {
                 deadline
             );
     }
-    // old add action
-    function addAction(
-        uint actionId,
-        IERC20 tokenIn,
-        IERC20 tokenOut,
-        uint amountIn,
-        address _from,
-        address to,
-        uint timeZero,
-        uint duration,
-        bool isActive
-    ) public returns (uint) {
-        require(!actions[actionId].initialized, "Action ID already exists");
-
-        actions[actionId] = AutomationsAction({
-            ownerAddress: msg.sender,
-            initialized: true,
-            duration: duration,
-            timeZero: timeZero,
-            tokenIn: tokenIn,
-            tokenOut: tokenOut,
-            amountIn: amountIn,
-            from: _from,
-            to: to,
-            isActive: isActive
-        });
-        actionIds.push(actionId);
-        return actionId;
-    }
 
     function addActionExternal(
         uint actionId,
@@ -278,33 +235,6 @@ contract TokenDelegator {
             action.tokenIn.allowance(action.from, address(this)) >=
                 action.amountIn,
             "Not enough allowance"
-        );
-
-        action.timeZero =
-            action.timeZero +
-            ((currentTime - action.timeZero) / action.duration) *
-            action.duration +
-            action.duration;
-
-        address[] memory path = new address[](2);
-        path[0] = address(action.tokenIn);
-        path[1] = address(action.tokenOut);
-
-        uint[] memory amounts = uniswapV2Router.getAmountsOut(
-            action.amountIn,
-            path
-        );
-
-        uint deadline = currentTime + 1 days;
-
-        swapTokensForTokens(
-            action.tokenIn,
-            action.tokenOut,
-            action.amountIn,
-            amounts[amounts.length - 1],
-            action.from,
-            action.to,
-            deadline
         );
     }
 }

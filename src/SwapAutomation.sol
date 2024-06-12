@@ -128,4 +128,25 @@ contract SwapAutomation {
         require(actions[actionId].initialized, "Action does not exist");
         actions[actionId].isActive = newIsActive;
     }
+
+    // address[] memory path = new address[](2);
+    // path[0] = address(action.tokenIn);
+    // path[1] = address(action.tokenOut);
+
+    // uint[] memory amounts = uniswapV2Router.getAmountsOut(
+    //     action.amountIn,
+    //     path
+    // );
+
+    // uint deadline = currentTime + 1 days;
+
+    // swapTokensForTokens(
+    //     action.tokenIn,
+    //     action.tokenOut,
+    //     action.amountIn,
+    //     amounts[amounts.length - 1],
+    //     action.from,
+    //     action.to,
+    //     deadline
+    // );
 }
