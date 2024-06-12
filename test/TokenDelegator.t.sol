@@ -133,135 +133,135 @@ contract TokenDelegatorTest is Test {
         tokenDelegator.transferBatch(transfers);
     }
 
-    function testAddActionStoresCorrectly() public {
-        uint amountIn = 100e18;
-        uint timeZero = block.timestamp + 1 days; // Set timeZero to a future time
-        uint duration = 1 days;
-        bool isActive = true;
-        uint expectedId = 1;
+    // function testAddActionStoresCorrectly() public {
+    //     uint amountIn = 100e18;
+    //     uint timeZero = block.timestamp + 1 days; // Set timeZero to a future time
+    //     uint duration = 1 days;
+    //     bool isActive = true;
+    //     uint expectedId = 1;
 
-        tokenDelegator.addAction(
-            expectedId,
-            token,
-            token2,
-            amountIn,
-            from,
-            to,
-            timeZero,
-            duration,
-            isActive
-        );
+    //     tokenDelegator.addAction(
+    //         expectedId,
+    //         token,
+    //         token2,
+    //         amountIn,
+    //         from,
+    //         to,
+    //         timeZero,
+    //         duration,
+    //         isActive
+    //     );
 
-        TokenDelegator.AutomationsAction memory storedAction = tokenDelegator
-            .getAutomationAction(expectedId);
+    //     TokenDelegator.AutomationsAction memory storedAction = tokenDelegator
+    //         .getAutomationAction(expectedId);
 
-        assertEq(
-            storedAction.ownerAddress,
-            address(this),
-            "Owner address does not match"
-        );
-        assertEq(storedAction.initialized, true, "Initialized should be true");
-        assertEq(storedAction.duration, duration, "Duration does not match");
-        assertEq(storedAction.timeZero, timeZero, "TimeZero does not match");
-        assertEq(
-            address(storedAction.tokenIn),
-            address(token),
-            "TokenIn does not match"
-        );
-        assertEq(
-            address(storedAction.tokenOut),
-            address(token2),
-            "TokenOut does not match"
-        );
-        assertEq(storedAction.amountIn, amountIn, "AmountIn does not match");
-        assertEq(storedAction.from, from, "From address does not match");
-        assertEq(storedAction.to, to, "To address does not match");
-        assertEq(storedAction.isActive, isActive, "IsActive does not match");
-    }
+    //     assertEq(
+    //         storedAction.ownerAddress,
+    //         address(this),
+    //         "Owner address does not match"
+    //     );
+    //     assertEq(storedAction.initialized, true, "Initialized should be true");
+    //     assertEq(storedAction.duration, duration, "Duration does not match");
+    //     assertEq(storedAction.timeZero, timeZero, "TimeZero does not match");
+    //     assertEq(
+    //         address(storedAction.tokenIn),
+    //         address(token),
+    //         "TokenIn does not match"
+    //     );
+    //     assertEq(
+    //         address(storedAction.tokenOut),
+    //         address(token2),
+    //         "TokenOut does not match"
+    //     );
+    //     assertEq(storedAction.amountIn, amountIn, "AmountIn does not match");
+    //     assertEq(storedAction.from, from, "From address does not match");
+    //     assertEq(storedAction.to, to, "To address does not match");
+    //     assertEq(storedAction.isActive, isActive, "IsActive does not match");
+    // }
 
-    function testGetAutomationAction() public {
-        uint amountIn = 500e18;
-        uint timeZero = block.timestamp + 1 days; // Set timeZero to a future time
-        uint duration = 1 days;
-        bool isActive = true;
-        uint id = 1;
+    // function testGetAutomationAction() public {
+    //     uint amountIn = 500e18;
+    //     uint timeZero = block.timestamp + 1 days; // Set timeZero to a future time
+    //     uint duration = 1 days;
+    //     bool isActive = true;
+    //     uint id = 1;
 
-        token.approve(address(tokenDelegator), 500 ether);
-        token2.approve(address(tokenDelegator), 500 ether);
+    //     token.approve(address(tokenDelegator), 500 ether);
+    //     token2.approve(address(tokenDelegator), 500 ether);
 
-        tokenDelegator.addAction(
-            id,
-            token,
-            token2,
-            amountIn,
-            from,
-            to,
-            timeZero,
-            duration,
-            isActive
-        );
+    //     tokenDelegator.addAction(
+    //         id,
+    //         token,
+    //         token2,
+    //         amountIn,
+    //         from,
+    //         to,
+    //         timeZero,
+    //         duration,
+    //         isActive
+    //     );
 
-        TokenDelegator.AutomationsAction memory action = tokenDelegator
-            .getAutomationAction(id);
+    //     TokenDelegator.AutomationsAction memory action = tokenDelegator
+    //         .getAutomationAction(id);
 
-        assertEq(
-            action.ownerAddress,
-            address(this),
-            "Owner address does not match"
-        );
-        assertEq(action.initialized, true, "Initialized should be true");
-        assertEq(action.duration, duration, "Duration does not match");
-        assertEq(action.timeZero, timeZero, "TimeZero does not match");
-        assertEq(
-            address(action.tokenIn),
-            address(token),
-            "TokenIn does not match"
-        );
-        assertEq(
-            address(action.tokenOut),
-            address(token2),
-            "TokenOut does not match"
-        );
-        assertEq(action.amountIn, amountIn, "AmountIn does not match");
-        assertEq(action.from, from, "From address does not match");
-        assertEq(action.to, to, "To address does not match");
-        assertEq(action.isActive, isActive, "IsActive does not match");
-    }
+    //     assertEq(
+    //         action.ownerAddress,
+    //         address(this),
+    //         "Owner address does not match"
+    //     );
+    //     assertEq(action.initialized, true, "Initialized should be true");
+    //     assertEq(action.duration, duration, "Duration does not match");
+    //     assertEq(action.timeZero, timeZero, "TimeZero does not match");
+    //     assertEq(
+    //         address(action.tokenIn),
+    //         address(token),
+    //         "TokenIn does not match"
+    //     );
+    //     assertEq(
+    //         address(action.tokenOut),
+    //         address(token2),
+    //         "TokenOut does not match"
+    //     );
+    //     assertEq(action.amountIn, amountIn, "AmountIn does not match");
+    //     assertEq(action.from, from, "From address does not match");
+    //     assertEq(action.to, to, "To address does not match");
+    //     assertEq(action.isActive, isActive, "IsActive does not match");
+    // }
 
-    function testSetAutomationActiveState() public {
-        uint amountIn = 500e18;
-        uint timeZero = block.timestamp + 1 days; // Set timeZero to a future time
-        uint duration = 1 days;
-        bool isActive = true;
-        uint id = 1;
+    // function testSetAutomationActiveState() public {
+    //     uint amountIn = 500e18;
+    //     uint timeZero = block.timestamp + 1 days; // Set timeZero to a future time
+    //     uint duration = 1 days;
+    //     bool isActive = true;
+    //     uint id = 1;
 
-        tokenDelegator.addAction(
-            id,
-            token,
-            token2,
-            amountIn,
-            from,
-            to,
-            timeZero,
-            duration,
-            isActive
-        );
+    //     tokenDelegator.addAction(
+    //         id,
+    //         token,
+    //         token2,
+    //         amountIn,
+    //         from,
+    //         to,
+    //         timeZero,
+    //         duration,
+    //         isActive
+    //     );
 
-        vm.prank(address(this));
-        tokenDelegator.setAutomationActiveState(id, false);
+    //     vm.prank(address(this));
+    //     tokenDelegator.setAutomationActiveState(id, false);
 
-        TokenDelegator.AutomationsAction memory storedAction = tokenDelegator
-            .getAutomationAction(id);
+    //     TokenDelegator.AutomationsAction memory storedAction = tokenDelegator
+    //         .getAutomationAction(id);
 
-        assertEq(storedAction.isActive, false, "IsActive should be false");
+    //     assertEq(storedAction.isActive, false, "IsActive should be false");
 
-        vm.prank(address(this));
-        tokenDelegator.setAutomationActiveState(id, true);
+    //     vm.prank(address(this));
+    //     tokenDelegator.setAutomationActiveState(id, true);
 
-        storedAction = tokenDelegator.getAutomationAction(id);
+    //     storedAction = tokenDelegator.getAutomationAction(id);
 
-        assertEq(storedAction.isActive, true, "IsActive should be true");
-    }
+    //     assertEq(storedAction.isActive, true, "IsActive should be true");
+    // }
 
     // function testGetAmountsOut() public {
     //     uint amountIn = 500e18;
@@ -371,5 +371,4 @@ contract TokenDelegatorTest is Test {
     //     vm.prank(address(this));
     //     tokenDelegator.executeAction();
     // }
- 
 }

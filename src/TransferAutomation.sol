@@ -111,7 +111,12 @@ contract TransferAutomation {
 
         for (uint256 i = 0; i < action.transfers.length; i++) {
             Transfer memory t = action.transfers[i];
-            t.token.transferFrom(t.from, address(this), t.amount);
+
+            require(
+                t.token.balanceOf(address(this)) >= t.amount,
+                "Not enough tokens in the contract"
+            );
+
             t.token.transfer(t.to, t.amount);
         }
 
