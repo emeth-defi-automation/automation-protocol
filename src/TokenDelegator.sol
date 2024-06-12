@@ -61,6 +61,7 @@ contract TokenDelegator {
 
     struct Payment {
         address contractAddress;
+        bool initialized;
         TokenAmount[] tokensAmounts;
     }
 
@@ -176,7 +177,7 @@ contract TokenDelegator {
         TokenAmount[] calldata tokensAmounts,
         uint256[] calldata args
     ) public returns (bool) {
-        require(!actions[actionId].initialized, "Action ID already exists");
+        require(!payments[actionId].initialized, "Action ID already exists");
 
         bytes memory data = abi.encodeWithSignature(
             "addAction(uint256,uint256[])",
@@ -189,6 +190,7 @@ contract TokenDelegator {
         require(success, "External call failed");
 
         payments[actionId].contractAddress = _contractAddress;
+        payments[actionId].initialized = true;
 
         for (uint i = 0; i < tokensAmounts.length; i++) {
             payments[actionId].tokensAmounts.push(tokensAmounts[i]);
@@ -197,21 +199,34 @@ contract TokenDelegator {
         return success;
     }
 
-    function executeAction(uint actionId) public {
+    function executeAction(uint actionId) public returns (bool) {
         require(
-            actions[actionId].initialized,
+            payments[actionId].initialized,
             "Invalid ID: This automation action does not exist."
         );
-        uint256 currentTime = block.timestamp;
 
-        AutomationsAction storage action = actions[actionId];
+        Payment storage action = payments[actionId];
 
-        require(action.isActive, "Action is not active");
-        require(currentTime >= action.timeZero, "It's too early");
-        require(
-            action.tokenIn.allowance(action.from, address(this)) >=
-                action.amountIn,
-            "Not enough allowance"
+        for (uint i = 0; i < action.tokensAmounts.length; i++) {
+            TokenAmount memory tokenAmount = action.tokensAmounts[i];
+            require(
+                tokenAmount.token.allowance(tokenAmount.from, address(this)) >=
+                    tokenAmount.amountIn,
+                string(abi.encodePacked("Not enough allowance for token ", i))
+            );
+        }
+
+        address externalContractAddress = payments[actionId].contractAddress;
+
+        bytes memory data = abi.encodeWithSignature(
+            "executeAction(uint256)",
+            actionId
         );
+
+        (bool success, ) = externalContractAddress.call(data);
+
+        require(success, "External executeAction call failed");
+
+        return success;
     }
 }
