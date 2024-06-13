@@ -138,7 +138,7 @@ contract SwapAutomation {
 
         actions[actionId] = SwapAction({
             ownerAddress: address(uint160(action[0])),
-            initialized: uintToBool(action[1]), // should convert to bool be used or rather 0 and 1
+            initialized: uintToBool(action[1]),
             duration: action[2],
             timeZero: action[3],
             tokenIn: IERC20(address(uint160(action[4]))),
