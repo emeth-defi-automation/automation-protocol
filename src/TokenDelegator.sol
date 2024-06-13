@@ -215,13 +215,22 @@ contract TokenDelegator {
         );
 
         Payment storage payment = payments[actionId];
+
+        TokenAmount[] memory tokensAmountsCopy = new TokenAmount[](
+            payment.tokensAmounts.length
+        );
+
+        for (uint i = 0; i < payment.tokensAmounts.length; i++) {
+            tokensAmountsCopy[i] = payment.tokensAmounts[i];
+        }
+
         return (
             payment.contractAddress,
             payment.initialized,
-            payment.tokensAmounts
+            tokensAmountsCopy
         );
     }
-
+    // TODO provide with callData amountoutmin in uniswap itp
     function executeAction(uint actionId) public returns (bool) {
         require(
             payments[actionId].initialized,
@@ -229,7 +238,7 @@ contract TokenDelegator {
         );
 
         Payment storage action = payments[actionId];
-        address externalContractAddress = payments[actionId].contractAddress;
+        address externalContractAddress = action.contractAddress;
 
         for (uint i = 0; i < action.tokensAmounts.length; i++) {
             TokenAmount memory tokenAmount = action.tokensAmounts[i];

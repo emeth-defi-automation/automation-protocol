@@ -222,12 +222,10 @@ contract SwapAutomation {
 
         uint deadline = currentTime + 1 days;
 
-        swapTokensForTokens(
-            action.tokenIn,
-            action.tokenOut,
+        uniswapV2Router.swapExactTokensForTokens(
             action.amountIn,
             amounts[amounts.length - 1],
-            address(this),
+            path,
             action.to,
             deadline
         );
