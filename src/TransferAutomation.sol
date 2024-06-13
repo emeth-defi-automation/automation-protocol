@@ -48,7 +48,7 @@ contract TransferAutomation {
 
         TransferAction storage newAction = actions[actionId];
         newAction.ownerAddress = address(uint160(action[0]));
-        newAction.initialized = uintToBool(action[1]);
+        newAction.initialized = true;
         newAction.duration = action[2];
         newAction.timeZero = action[3];
         newAction.isActive = uintToBool(action[4]);

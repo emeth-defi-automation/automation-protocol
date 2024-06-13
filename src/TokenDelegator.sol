@@ -198,6 +198,25 @@ contract TokenDelegator {
 
         return success;
     }
+
+    function setActiveState(
+        uint actionId,
+        bool newIsActive
+    ) public returns (bool) {
+        require(payments[actionId].initialized, "Action does not exist");
+        Payment memory action = payments[actionId];
+
+        bytes memory data = abi.encodeWithSignature(
+            "setActiveState(uint256,bool)",
+            actionId,
+            newIsActive
+        );
+
+        (bool success, ) = action.contractAddress.call(data);
+
+        return success;
+    }
+
     function getPaymentById(
         uint actionId
     )
