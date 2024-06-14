@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
-import "forge-std/console.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "forge-std/console.sol";
 
 interface IUniswapV2Router {
     function WETH() external pure returns (address);
-
     function swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
@@ -13,7 +12,6 @@ interface IUniswapV2Router {
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
-
     function swapExactTokensForETH(
         uint amountIn,
         uint amountOutMin,
@@ -21,18 +19,28 @@ interface IUniswapV2Router {
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
-
     function swapExactETHForTokens(
         uint amountOutMin,
         address[] calldata path,
         address to,
         uint deadline
     ) external payable returns (uint[] memory amounts);
-
     function getAmountsOut(
         uint amountIn,
         address[] calldata path
     ) external view returns (uint[] memory amounts);
+}
+
+interface IExternalContract {
+    function addAction(
+        uint256 actionId,
+        uint256[] calldata args
+    ) external returns (bool);
+    function setActiveState(
+        uint256 actionId,
+        bool newIsActive
+    ) external returns (bool);
+    function executeAction(uint256 actionId) external returns (bool);
 }
 
 contract TokenDelegator {
@@ -179,13 +187,11 @@ contract TokenDelegator {
     ) public returns (bool) {
         require(!payments[actionId].initialized, "Action ID already exists");
 
-        bytes memory data = abi.encodeWithSignature(
-            "addAction(uint256,uint256[])",
-            actionId,
-            args
+        IExternalContract externalContract = IExternalContract(
+            _contractAddress
         );
 
-        (bool success, ) = _contractAddress.call(data);
+        bool success = externalContract.addAction(actionId, args);
 
         require(success, "External call failed");
 
@@ -206,13 +212,13 @@ contract TokenDelegator {
         require(payments[actionId].initialized, "Action does not exist");
         Payment memory action = payments[actionId];
 
-        bytes memory data = abi.encodeWithSignature(
-            "setActiveState(uint256,bool)",
-            actionId,
-            newIsActive
+        IExternalContract externalContract = IExternalContract(
+            action.contractAddress
         );
 
-        (bool success, ) = action.contractAddress.call(data);
+        bool success = externalContract.setActiveState(actionId, newIsActive);
+
+        require(success, "External setActiveState call failed");
 
         return success;
     }
@@ -249,7 +255,7 @@ contract TokenDelegator {
             tokensAmountsCopy
         );
     }
-    // TODO provide with callData amountoutmin in uniswap itp
+
     function executeAction(uint actionId) public returns (bool) {
         require(
             payments[actionId].initialized,
@@ -276,12 +282,11 @@ contract TokenDelegator {
             require(transferSuccess, "Token transfer failed");
         }
 
-        bytes memory data = abi.encodeWithSignature(
-            "executeAction(uint256)",
-            actionId
+        IExternalContract externalContract = IExternalContract(
+            externalContractAddress
         );
 
-        (bool success, ) = externalContractAddress.call(data);
+        bool success = externalContract.executeAction(actionId);
 
         require(success, "External executeAction call failed");
 
