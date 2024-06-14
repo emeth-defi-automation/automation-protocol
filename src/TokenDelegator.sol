@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
-
+import "forge-std/console.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 interface IUniswapV2Router {
@@ -53,19 +53,20 @@ contract TokenDelegator {
         uint256 amount;
     }
 
-    struct AutomationsAction {
-        uint delay;
-        uint date;
-        IERC20 tokenIn;
-        IERC20 tokenOut;
-        uint amountIn;
+    struct TokenAmount {
         address from;
-        address to;
-        uint deadline;
+        IERC20 token;
+        uint amountIn;
     }
 
-    mapping(uint => AutomationsAction) public actions;
-    uint public nextAutomationActionId = 1;
+    struct Payment {
+        address contractAddress;
+        bool initialized;
+        TokenAmount[] tokensAmounts;
+    }
+
+    mapping(uint => Payment) public payments;
+    uint[] public actionIds;
 
     function approve(address _user) public {
         approvals[_user][msg.sender] = true;
@@ -170,68 +171,120 @@ contract TokenDelegator {
             );
     }
 
-    function addAction(
-        IERC20 tokenIn,
-        IERC20 tokenOut,
-        uint amountIn,
-        address _from,
-        address to,
-        uint deadline,
-        uint _delayDays
-    ) public returns (uint) {
-        uint currentId = nextAutomationActionId;
-        actions[currentId] = AutomationsAction({
-            delay: _delayDays * 1 days,
-            date: 0,
-            tokenIn: tokenIn,
-            tokenOut: tokenOut,
-            amountIn: amountIn,
-            from: _from,
-            to: to,
-            deadline: deadline
-        });
-        nextAutomationActionId++;
-        return currentId;
+    function addActionExternal(
+        uint actionId,
+        address _contractAddress,
+        TokenAmount[] calldata tokensAmounts,
+        uint256[] calldata args
+    ) public returns (bool) {
+        require(!payments[actionId].initialized, "Action ID already exists");
+
+        bytes memory data = abi.encodeWithSignature(
+            "addAction(uint256,uint256[])",
+            actionId,
+            args
+        );
+
+        (bool success, ) = _contractAddress.call(data);
+
+        require(success, "External call failed");
+
+        payments[actionId].contractAddress = _contractAddress;
+        payments[actionId].initialized = true;
+
+        for (uint i = 0; i < tokensAmounts.length; i++) {
+            payments[actionId].tokensAmounts.push(tokensAmounts[i]);
+        }
+
+        return success;
     }
 
-    function getAutomationAction(
-        uint _id
-    ) public view returns (AutomationsAction memory) {
+    function setActiveState(
+        uint actionId,
+        bool newIsActive
+    ) public returns (bool) {
+        require(payments[actionId].initialized, "Action does not exist");
+        Payment memory action = payments[actionId];
+
+        bytes memory data = abi.encodeWithSignature(
+            "setActiveState(uint256,bool)",
+            actionId,
+            newIsActive
+        );
+
+        (bool success, ) = action.contractAddress.call(data);
+
+        return success;
+    }
+
+    function getPaymentById(
+        uint actionId
+    )
+        public
+        view
+        returns (
+            address contractAddress,
+            bool initialized,
+            TokenAmount[] memory tokensAmounts
+        )
+    {
         require(
-            _id > 0 && _id < nextAutomationActionId,
+            payments[actionId].initialized,
+            "Invalid ID: This payment action does not exist."
+        );
+
+        Payment storage payment = payments[actionId];
+
+        TokenAmount[] memory tokensAmountsCopy = new TokenAmount[](
+            payment.tokensAmounts.length
+        );
+
+        for (uint i = 0; i < payment.tokensAmounts.length; i++) {
+            tokensAmountsCopy[i] = payment.tokensAmounts[i];
+        }
+
+        return (
+            payment.contractAddress,
+            payment.initialized,
+            tokensAmountsCopy
+        );
+    }
+    // TODO provide with callData amountoutmin in uniswap itp
+    function executeAction(uint actionId) public returns (bool) {
+        require(
+            payments[actionId].initialized,
             "Invalid ID: This automation action does not exist."
         );
-        return actions[_id];
-    }
 
-    function executeAction(uint _id) public returns (uint[] memory) {
-        require(_id < nextAutomationActionId, "Action does not exist.");
-        AutomationsAction storage action = actions[_id];
+        Payment storage action = payments[actionId];
+        address externalContractAddress = action.contractAddress;
 
-        require(
-            block.timestamp >= action.date + action.delay,
-            "It is too early to execute this action again."
-        );
-
-        action.date = block.timestamp;
-        address[] memory path = new address[](2);
-        path[0] = address(action.tokenIn);
-        path[1] = address(action.tokenOut);
-
-        uint[] memory amounts = uniswapV2Router.getAmountsOut(
-            action.amountIn,
-            path
-        );
-
-        return
-            swapTokensForTokens(
-                action.tokenIn,
-                action.tokenOut,
-                action.amountIn,
-                amounts[amounts.length - 1],
-                action.from,
-                action.to,
-                action.deadline
+        for (uint i = 0; i < action.tokensAmounts.length; i++) {
+            TokenAmount memory tokenAmount = action.tokensAmounts[i];
+            require(
+                tokenAmount.token.allowance(tokenAmount.from, address(this)) >=
+                    tokenAmount.amountIn,
+                string(abi.encodePacked("Not enough allowance for token ", i))
             );
+
+            bool transferSuccess = tokenAmount.token.transferFrom(
+                tokenAmount.from,
+                externalContractAddress,
+                tokenAmount.amountIn
+            );
+
+            require(transferSuccess, "Token transfer failed");
+        }
+
+        bytes memory data = abi.encodeWithSignature(
+            "executeAction(uint256)",
+            actionId
+        );
+
+        (bool success, ) = externalContractAddress.call(data);
+
+        require(success, "External executeAction call failed");
+
+        return success;
     }
 }
