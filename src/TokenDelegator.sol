@@ -35,6 +35,15 @@ interface IUniswapV2Router {
     ) external view returns (uint[] memory amounts);
 }
 
+interface ISwapAutomation {
+    function addAction(
+        uint actionId,
+        uint256[] calldata action
+    ) external returns (uint);
+    function setActiveState(uint actionId, bool newIsActive) external;
+    function executeAction(uint actionId) external;
+}
+
 contract TokenDelegator {
     IUniswapV2Router public uniswapV2Router;
 
@@ -179,15 +188,10 @@ contract TokenDelegator {
     ) public returns (bool) {
         require(!payments[actionId].initialized, "Action ID already exists");
 
-        bytes memory data = abi.encodeWithSignature(
-            "addAction(uint256,uint256[])",
-            actionId,
-            args
-        );
+        ISwapAutomation swapAutomation = ISwapAutomation(_contractAddress);
 
-        (bool success, ) = _contractAddress.call(data);
-
-        require(success, "External call failed");
+        uint actionReturned = swapAutomation.addAction(actionId, args);
+        require(actionReturned == actionId, "External call failed");
 
         payments[actionId].contractAddress = _contractAddress;
         payments[actionId].initialized = true;
@@ -196,7 +200,7 @@ contract TokenDelegator {
             payments[actionId].tokensAmounts.push(tokensAmounts[i]);
         }
 
-        return success;
+        return true;
     }
 
     function setActiveState(
@@ -206,13 +210,11 @@ contract TokenDelegator {
         require(payments[actionId].initialized, "Action does not exist");
         Payment memory action = payments[actionId];
 
-        bytes memory data = abi.encodeWithSignature(
-            "setActiveState(uint256,bool)",
-            actionId,
-            newIsActive
+        IExternalContract externalContract = IExternalContract(
+            action.contractAddress
         );
 
-        (bool success, ) = action.contractAddress.call(data);
+        bool success = externalContract.setActiveState(actionId, newIsActive);
 
         return success;
     }
@@ -269,19 +271,28 @@ contract TokenDelegator {
 
             bool transferSuccess = tokenAmount.token.transferFrom(
                 tokenAmount.from,
+                address(this),
+                tokenAmount.amountIn
+            );
+
+            require(transferSuccess, "Token transfer to contract failed");
+
+            transferSuccess = tokenAmount.token.transfer(
                 externalContractAddress,
                 tokenAmount.amountIn
             );
 
-            require(transferSuccess, "Token transfer failed");
+            require(
+                transferSuccess,
+                "Token transfer to external contract failed"
+            );
         }
 
-        bytes memory data = abi.encodeWithSignature(
-            "executeAction(uint256)",
-            actionId
+        IExternalContract externalContract = IExternalContract(
+            externalContractAddress
         );
 
-        (bool success, ) = externalContractAddress.call(data);
+        bool success = externalContract.executeAction(actionId);
 
         require(success, "External executeAction call failed");
 
