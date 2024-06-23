@@ -36,11 +36,15 @@ interface IExternalContract {
         uint256 actionId,
         uint256[] calldata args
     ) external returns (bool);
+
     function setActiveState(
         uint256 actionId,
         bool newIsActive
     ) external returns (bool);
+
     function executeAction(uint256 actionId) external returns (bool);
+
+    function deleteAction(uint256 actionId) external returns (bool);
 }
 
 contract TokenDelegator {
@@ -218,10 +222,23 @@ contract TokenDelegator {
 
         bool success = externalContract.setActiveState(actionId, newIsActive);
 
-        if (!success) {
-            return false;
-        }
+        require(success, "External contract call reverted");
 
+        return true;
+    }
+
+    function deleteAction(uint actionId) public returns (bool) {
+        require(payments[actionId].initialized, "Action does not exist");
+        Payment memory action = payments[actionId];
+
+        IExternalContract externalContract = IExternalContract(
+            action.contractAddress
+        );
+
+        bool success = externalContract.deleteAction(actionId);
+        require(success, "External contract call reverted");
+
+        action.initialized = false;
         return true;
     }
 

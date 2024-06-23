@@ -185,15 +185,22 @@ contract SwapAutomation {
         );
     }
 
-    function deleteAction(uint actionId) public {
+    function deleteAction(uint actionId) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
         actions[actionId].isActive = false;
         actions[actionId].initialized = false;
+
+        return true;
     }
 
-    function setActiveState(uint actionId, bool newIsActive) public {
+    function setActiveState(
+        uint actionId,
+        bool newIsActive
+    ) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
         actions[actionId].isActive = newIsActive;
+
+        return true;
     }
 
     function executeAction(uint actionId) public {
