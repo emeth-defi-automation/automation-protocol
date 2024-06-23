@@ -193,7 +193,7 @@ contract TokenDelegator {
 
         bool success = externalContract.addAction(actionId, args);
 
-        require(success, "External call failed");
+        require(success, "External contract call failed");
 
         payments[actionId].contractAddress = _contractAddress;
         payments[actionId].initialized = true;
@@ -202,7 +202,7 @@ contract TokenDelegator {
             payments[actionId].tokensAmounts.push(tokensAmounts[i]);
         }
 
-        return success;
+        return true;
     }
 
     function setActiveState(
@@ -218,9 +218,11 @@ contract TokenDelegator {
 
         bool success = externalContract.setActiveState(actionId, newIsActive);
 
-        require(success, "External setActiveState call failed");
+        if (!success) {
+            return false;
+        }
 
-        return success;
+        return true;
     }
 
     function getPaymentById(
@@ -279,7 +281,9 @@ contract TokenDelegator {
                 tokenAmount.amountIn
             );
 
-            require(transferSuccess, "Token transfer failed");
+            if (!transferSuccess) {
+                return false;
+            }
         }
 
         IExternalContract externalContract = IExternalContract(
@@ -288,8 +292,8 @@ contract TokenDelegator {
 
         bool success = externalContract.executeAction(actionId);
 
-        require(success, "External executeAction call failed");
+        require(success, "External contract call failed");
 
-        return success;
+        return true;
     }
 }

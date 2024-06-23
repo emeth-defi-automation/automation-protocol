@@ -29,7 +29,7 @@ contract TransferAutomation {
     function addAction(
         uint actionId,
         uint256[] calldata action
-    ) public returns (uint) {
+    ) public returns (bool) {
         require(!actions[actionId].initialized, "Action ID already exists");
 
         uint transfersCount = action[5];
@@ -58,7 +58,7 @@ contract TransferAutomation {
         }
 
         actionIds.push(actionId);
-        return actionId;
+        return true;
     }
 
     function getActionById(

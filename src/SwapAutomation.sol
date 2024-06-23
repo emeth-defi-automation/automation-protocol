@@ -133,7 +133,7 @@ contract SwapAutomation {
     function addAction(
         uint actionId,
         uint256[] calldata action
-    ) public returns (uint) {
+    ) public returns (bool) {
         require(!actions[actionId].initialized, "Action ID already exists");
 
         actions[actionId] = SwapAction({
@@ -149,7 +149,7 @@ contract SwapAutomation {
             isActive: uintToBool(action[9]) //same
         });
         actionIds.push(actionId);
-        return actionId;
+        return true;
     }
 
     function getActionById(
