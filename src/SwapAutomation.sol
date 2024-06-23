@@ -141,12 +141,12 @@ contract SwapAutomation {
             initialized: true,
             duration: action[2],
             timeZero: action[3],
-            tokenIn: IERC20(address(uint160(action[4]))),
-            tokenOut: IERC20(address(uint160(action[5]))),
-            amountIn: action[6],
-            from: address(uint160(action[7])),
-            to: address(uint160(action[8])),
-            isActive: uintToBool(action[9]) //same
+            isActive: uintToBool(action[4]),
+            tokenIn: IERC20(address(uint160(action[5]))),
+            tokenOut: IERC20(address(uint160(action[6]))),
+            amountIn: action[7],
+            from: address(uint160(action[8])),
+            to: address(uint160(action[9]))
         });
         actionIds.push(actionId);
         return true;
