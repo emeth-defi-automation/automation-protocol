@@ -29,7 +29,7 @@ contract TransferAutomation {
     function addAction(
         uint actionId,
         uint256[] calldata action
-    ) public returns (uint) {
+    ) public returns (bool) {
         require(!actions[actionId].initialized, "Action ID already exists");
 
         uint transfersCount = action[5];
@@ -58,7 +58,7 @@ contract TransferAutomation {
         }
 
         actionIds.push(actionId);
-        return actionId;
+        return true;
     }
 
     function getActionById(
@@ -86,15 +86,22 @@ contract TransferAutomation {
         );
     }
 
-    function deleteAction(uint actionId) public {
+    function deleteAction(uint actionId) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
         actions[actionId].isActive = false;
         actions[actionId].initialized = false;
+
+        return true;
     }
 
-    function setActiveState(uint actionId, bool newIsActive) public {
+    function setActiveState(
+        uint actionId,
+        bool newIsActive
+    ) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
         actions[actionId].isActive = newIsActive;
+
+        return true;
     }
 
     function executeAction(uint actionId) public {

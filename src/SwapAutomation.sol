@@ -133,7 +133,7 @@ contract SwapAutomation {
     function addAction(
         uint actionId,
         uint256[] calldata action
-    ) public returns (uint) {
+    ) public returns (bool) {
         require(!actions[actionId].initialized, "Action ID already exists");
 
         actions[actionId] = SwapAction({
@@ -141,15 +141,15 @@ contract SwapAutomation {
             initialized: true,
             duration: action[2],
             timeZero: action[3],
-            tokenIn: IERC20(address(uint160(action[4]))),
-            tokenOut: IERC20(address(uint160(action[5]))),
-            amountIn: action[6],
-            from: address(uint160(action[7])),
-            to: address(uint160(action[8])),
-            isActive: uintToBool(action[9]) //same
+            isActive: uintToBool(action[4]),
+            tokenIn: IERC20(address(uint160(action[5]))),
+            tokenOut: IERC20(address(uint160(action[6]))),
+            amountIn: action[7],
+            from: address(uint160(action[8])),
+            to: address(uint160(action[9]))
         });
         actionIds.push(actionId);
-        return actionId;
+        return true;
     }
 
     function getActionById(
@@ -185,15 +185,22 @@ contract SwapAutomation {
         );
     }
 
-    function deleteAction(uint actionId) public {
+    function deleteAction(uint actionId) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
         actions[actionId].isActive = false;
         actions[actionId].initialized = false;
+
+        return true;
     }
 
-    function setActiveState(uint actionId, bool newIsActive) public {
+    function setActiveState(
+        uint actionId,
+        bool newIsActive
+    ) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
         actions[actionId].isActive = newIsActive;
+
+        return true;
     }
 
     function executeAction(uint actionId) public {
