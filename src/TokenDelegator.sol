@@ -56,6 +56,8 @@ contract TokenDelegator {
         );
     }
 
+    event ActionExecutionAttempted(uint256 actionId, string message, uint256 timeZero, address contractAddress);
+
     mapping(address => mapping(address => bool)) public approvals;
 
     struct Transfer {
@@ -196,6 +198,10 @@ contract TokenDelegator {
         );
 
         bool success = externalContract.addAction(actionId, args);
+
+        uint256 timeZero = args[3];
+
+        emit ActionExecutionAttempted(actionId, "Its too early",timeZero,  _contractAddress);
 
         require(success, "External contract call failed");
 
