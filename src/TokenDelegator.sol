@@ -56,6 +56,8 @@ contract TokenDelegator {
         );
     }
 
+    event ActionExecutionAttempted(uint256 actionId, string message, uint256 timeZero, address contractAddress);
+
     mapping(address => mapping(address => bool)) public approvals;
 
     struct Transfer {
@@ -197,6 +199,10 @@ contract TokenDelegator {
 
         bool success = externalContract.addAction(actionId, args);
 
+        uint256 timeZero = args[3];
+
+        emit ActionExecutionAttempted(actionId, "Its too early",timeZero,  _contractAddress);
+
         require(success, "External contract call failed");
 
         payments[actionId].contractAddress = _contractAddress;
@@ -292,15 +298,17 @@ contract TokenDelegator {
                 string(abi.encodePacked("Not enough allowance for token ", i))
             );
 
-            bool transferSuccess = tokenAmount.token.transferFrom(
+           tokenAmount.token.transferFrom(
                 tokenAmount.from,
+                address(this),
+                tokenAmount.amountIn
+            );
+
+            tokenAmount.token.transfer(
                 externalContractAddress,
                 tokenAmount.amountIn
             );
 
-            if (!transferSuccess) {
-                return false;
-            }
         }
 
         IExternalContract externalContract = IExternalContract(
