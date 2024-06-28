@@ -44,6 +44,8 @@ contract TokenDelegator {
         );
     }
 
+    event ActionExecutionAttempted(uint256 actionId, uint256 timeZero, address contractAddress);
+
     mapping(address => mapping(address => bool)) public approvals;
 
     struct Transfer {
@@ -185,7 +187,12 @@ contract TokenDelegator {
             args
         );
 
+
         (bool success, ) = _contractAddress.call(data);
+
+        uint256 timeZero = args[3];
+
+        emit ActionExecutionAttempted(actionId,timeZero,_contractAddress);
 
         require(success, "External call failed");
 
@@ -214,7 +221,7 @@ contract TokenDelegator {
 
         (bool success, ) = action.contractAddress.call(data);
 
-        return success;
+        return success; 
     }
 
     function getPaymentById(
