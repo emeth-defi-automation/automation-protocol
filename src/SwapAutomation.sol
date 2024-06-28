@@ -52,10 +52,14 @@ contract SwapAutomation {
     uint[] public actionIds;
 
     IUniswapV2Router public uniswapV2Router;
+    address public tokenDelegatorAddress;
 
     constructor() {
         uniswapV2Router = IUniswapV2Router(
             0x87aE49902B749588c15c5FE2A6fE6a1067a5bea0
+        );
+        tokenDelegatorAddress = address(
+            0x58816DfA47be3c6052c53605363395e74AF3a832
         );
     }
 
@@ -135,7 +139,10 @@ contract SwapAutomation {
         uint256[] calldata action
     ) public returns (bool) {
         require(!actions[actionId].initialized, "Action ID already exists");
-
+        require(
+            msg.sender == tokenDelegatorAddress,
+            "You do not have rights to this automation."
+        );
         actions[actionId] = SwapAction({
             ownerAddress: address(uint160(action[0])),
             initialized: true,
@@ -187,6 +194,10 @@ contract SwapAutomation {
 
     function deleteAction(uint actionId) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
+        require(
+            msg.sender == tokenDelegatorAddress,
+            "You do not have rights to this automation."
+        );
         actions[actionId].isActive = false;
         actions[actionId].initialized = false;
 
@@ -198,6 +209,10 @@ contract SwapAutomation {
         bool newIsActive
     ) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
+        require(
+            msg.sender == tokenDelegatorAddress,
+            "You do not have rights to this automation."
+        );
         actions[actionId].isActive = newIsActive;
 
         return true;

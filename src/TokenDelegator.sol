@@ -75,6 +75,7 @@ contract TokenDelegator {
         address contractAddress;
         bool initialized;
         TokenAmount[] tokensAmounts;
+        address ownerAddress;
     }
 
     mapping(uint => Payment) public payments;
@@ -201,6 +202,7 @@ contract TokenDelegator {
 
         payments[actionId].contractAddress = _contractAddress;
         payments[actionId].initialized = true;
+        payments[actionId].ownerAddress = address(uint160(args[0]));
 
         for (uint i = 0; i < tokensAmounts.length; i++) {
             payments[actionId].tokensAmounts.push(tokensAmounts[i]);
@@ -214,6 +216,10 @@ contract TokenDelegator {
         bool newIsActive
     ) public returns (bool) {
         require(payments[actionId].initialized, "Action does not exist");
+        require(
+            msg.sender == payments[actionId].ownerAddress,
+            "You do not have rights to this automation."
+        );
         Payment memory action = payments[actionId];
 
         IExternalContract externalContract = IExternalContract(
@@ -229,6 +235,10 @@ contract TokenDelegator {
 
     function deleteAction(uint actionId) public returns (bool) {
         require(payments[actionId].initialized, "Action does not exist");
+        require(
+            msg.sender == payments[actionId].ownerAddress,
+            "You do not have rights to this automation."
+        );
         Payment memory action = payments[actionId];
 
         IExternalContract externalContract = IExternalContract(

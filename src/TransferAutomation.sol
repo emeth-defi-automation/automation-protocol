@@ -19,6 +19,13 @@ contract TransferAutomation {
         Transfer[] transfers;
     }
 
+    address public tokenDelegatorAddress;
+    constructor() {
+        tokenDelegatorAddress = address(
+            0x58816DfA47be3c6052c53605363395e74AF3a832
+        );
+    }
+
     mapping(uint => TransferAction) public actions;
     uint[] public actionIds;
 
@@ -31,6 +38,10 @@ contract TransferAutomation {
         uint256[] calldata action
     ) public returns (bool) {
         require(!actions[actionId].initialized, "Action ID already exists");
+        require(
+            msg.sender == tokenDelegatorAddress,
+            "You do not have rights to this automation."
+        );
 
         uint transfersCount = action[5];
 
@@ -88,6 +99,10 @@ contract TransferAutomation {
 
     function deleteAction(uint actionId) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
+        require(
+            msg.sender == tokenDelegatorAddress,
+            "You do not have rights to this automation."
+        );
         actions[actionId].isActive = false;
         actions[actionId].initialized = false;
 
@@ -99,6 +114,10 @@ contract TransferAutomation {
         bool newIsActive
     ) public returns (bool) {
         require(actions[actionId].initialized, "Action does not exist");
+        require(
+            msg.sender == tokenDelegatorAddress,
+            "You do not have rights to this automation."
+        );
         actions[actionId].isActive = newIsActive;
 
         return true;
